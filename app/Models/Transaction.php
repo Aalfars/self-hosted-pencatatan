@@ -11,6 +11,7 @@ class Transaction extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'type',
         'category',
         'title',
@@ -20,8 +21,13 @@ class Transaction extends Model
         'image',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     protected $casts = [
-        'date'   => 'date',
+        'date' => 'date',
         'amount' => 'decimal:2',
     ];
 
@@ -42,15 +48,16 @@ class Transaction extends Model
     // Accessor: format rupiah rapi, misal Rp 150.000
     public function getFormattedAmountAttribute(): string
     {
-        return 'Rp ' . number_format((float) $this->amount, 0, ',', '.');
+        return 'Rp '.number_format((float) $this->amount, 0, ',', '.');
     }
 
     // Accessor: URL publik gambar bukti transaksi
     public function getImageUrlAttribute(): ?string
     {
-        if (!$this->image) {
+        if (! $this->image) {
             return null;
         }
+
         return Storage::disk('public')->url($this->image);
     }
 
@@ -67,6 +74,6 @@ class Transaction extends Model
     public function scopeBulanIni($query)
     {
         return $query->whereMonth('date', now()->month)
-                      ->whereYear('date', now()->year);
+            ->whereYear('date', now()->year);
     }
 }

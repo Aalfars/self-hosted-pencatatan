@@ -1,523 +1,1002 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard Keuangan')
+@section('title', 'Dashboard Keuangan — Financee')
 
 @php
-    if (!function_exists('categoryIcon')) {
-        function categoryIcon($cat) {
+    if (!function_exists('categoryMeta')) {
+        function categoryMeta($cat) {
             $map = [
-                'Makan' => '🍜', 'Jajan' => '🍭', 'Bensin' => '⛽', 'Kewajiban' => '📄',
-                'Donasi/Amal' => '🤲', 'Beli Barang' => '🛍️', 'Transportasi' => '🚌',
-                'Tagihan' => '🧾', 'Kesehatan' => '💊', 'Hiburan' => '🎮',
+                'Makan'        => ['icon' => 'bi-cup-hot-fill',     'color' => 'amber'],
+                'Jajan'        => ['icon' => 'bi-cup-straw',        'color' => 'orange'],
+                'Bensin'       => ['icon' => 'bi-fuel-pump-fill',   'color' => 'blue'],
+                'Kewajiban'    => ['icon' => 'bi-shield-check',     'color' => 'indigo'],
+                'Donasi/Amal'  => ['icon' => 'bi-heart-fill',       'color' => 'rose'],
+                'Beli Barang'  => ['icon' => 'bi-bag-fill',         'color' => 'purple'],
+                'Transportasi' => ['icon' => 'bi-car-front-fill',   'color' => 'cyan'],
+                'Tagihan'      => ['icon' => 'bi-receipt-cutoff',   'color' => 'violet'],
+                'Kesehatan'    => ['icon' => 'bi-heart-pulse-fill', 'color' => 'emerald'],
+                'Hiburan'      => ['icon' => 'bi-controller',       'color' => 'fuchsia'],
             ];
-            return $map[$cat] ?? '💸';
-        }
-    }
-    if (!function_exists('categoryChipClass')) {
-        function categoryChipClass($cat) {
-            $classes = ['chip-c1', 'chip-c2', 'chip-c3', 'chip-c4', 'chip-c5'];
-            return $classes[crc32($cat) % count($classes)];
+            return $map[$cat] ?? ['icon' => 'bi-tag-fill', 'color' => 'slate'];
         }
     }
     $saldo = $totalPemasukan - $totalPengeluaran;
+    $totalBudgetSpent = $budgets->sum('spent');
+    $totalBudgetLimit = $budgets->sum('amount');
+    $budgetOverallPercent = $totalBudgetLimit > 0 ? round(($totalBudgetSpent / $totalBudgetLimit) * 100) : 0;
 @endphp
 
 @section('content')
 
-    {{-- ===================== HERO SALDO ===================== --}}
-    <div class="hero-balance mb-3">
-        <div class="hero-label">Saldo Bersih Periode Ini</div>
-        <div class="hero-number">Rp {{ number_format($saldo, 0, ',', '.') }}</div>
-        <div class="d-flex gap-2 mt-3">
-            <div class="hero-pill hero-pill-income">
-                <i class="bi bi-arrow-down-left-circle-fill"></i>
-                <span>Rp {{ number_format($totalPemasukan, 0, ',', '.') }}</span>
-            </div>
-            <div class="hero-pill hero-pill-expense">
-                <i class="bi bi-arrow-up-right-circle-fill"></i>
-                <span>Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}</span>
-            </div>
-        </div>
-    </div>
-
-    {{-- ===================== BUDGET (SCROLL HORIZONTAL) ===================== --}}
-    <div class="section-head" id="budget-section">
-        <h6>Budget Bulan Ini</h6>
-        <button class="link-action" data-bs-toggle="modal" data-bs-target="#budgetModal">
-            <i class="bi bi-plus-lg"></i> Atur
-        </button>
-    </div>
-
-    @if ($budgets->isNotEmpty())
-        <div class="scroll-x mb-4">
-            @foreach ($budgets as $budget)
-                <div class="budget-chip-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <span class="fw-semibold small">{{ categoryIcon($budget->category) }} {{ $budget->category }}</span>
-                        <form action="{{ route('budgets.destroy', $budget) }}" method="POST" onsubmit="return confirm('Hapus budget {{ $budget->category }}?')">
-                            @csrf @method('DELETE')
-                            <button class="btn-icon-ghost"><i class="bi bi-x"></i></button>
-                        </form>
-                    </div>
-                    <div class="budget-track mt-2">
-                        <div class="budget-fill {{ $budget->is_over ? 'over' : ($budget->percent >= 80 ? 'warn' : '') }}"
-                             style="width: {{ min($budget->percent, 100) }}%"></div>
-                    </div>
-                    <div class="d-flex justify-content-between small mt-1 text-muted-soft">
-                        <span>Rp {{ number_format($budget->spent, 0, ',', '.') }}</span>
-                        <span>{{ $budget->percent }}%</span>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    @else
-        <div class="card-panel p-3 mb-4 text-center text-muted-soft small">
-            Belum ada budget diatur bulan ini. Yuk atur biar pengeluaran lebih terkontrol.
-        </div>
-    @endif
-
-    {{-- ===================== FILTER (SEGMENTED + CHIPS) ===================== --}}
-    <div class="segmented mb-3">
-        @php
-            $tipeOptions = ['' => 'Semua', 'pemasukan' => 'Masuk', 'pengeluaran' => 'Keluar'];
-            $baseQuery = request()->except('type');
-        @endphp
-        @foreach ($tipeOptions as $val => $label)
-            <a href="{{ route('transactions.index', array_merge($baseQuery, $val ? ['type' => $val] : [])) }}"
-               class="segmented-item {{ request('type', '') == $val ? 'active' : '' }}">{{ $label }}</a>
-        @endforeach
-    </div>
-
-    <div class="scroll-x mb-3">
-        @php $catBaseQuery = request()->except('kategori'); @endphp
-        <a href="{{ route('transactions.index', $catBaseQuery) }}" class="chip {{ !request('kategori') ? 'chip-active' : '' }}">Semua Kategori</a>
-        @foreach ($categories as $cat)
-            <a href="{{ route('transactions.index', array_merge($catBaseQuery, ['kategori' => $cat])) }}"
-               class="chip {{ request('kategori') == $cat ? 'chip-active' : '' }}">{{ categoryIcon($cat) }} {{ $cat }}</a>
-        @endforeach
-    </div>
-
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <button class="link-action" data-bs-toggle="collapse" data-bs-target="#advancedFilter">
-            <i class="bi bi-sliders"></i> Cari & Urutkan
-        </button>
-        <a href="{{ route('report.export', request()->query()) }}" class="link-action">
-            <i class="bi bi-download"></i> Export
-        </a>
-    </div>
-
-    <div class="collapse mb-3" id="advancedFilter">
-        <form action="{{ route('transactions.index') }}" method="GET" class="card-panel p-3">
-            @foreach (request()->except(['q','bulan','sort']) as $key => $val)
-                <input type="hidden" name="{{ $key }}" value="{{ $val }}">
-            @endforeach
-            <div class="row g-2">
-                <div class="col-7">
-                    <input type="text" name="q" class="form-control form-control-sm" placeholder="Cari transaksi..." value="{{ request('q') }}">
-                </div>
-                <div class="col-5">
-                    <input type="month" name="bulan" class="form-control form-control-sm" value="{{ request('bulan') }}">
-                </div>
-                <div class="col-8">
-                    <select name="sort" class="form-select form-select-sm">
-                        <option value="date_desc" {{ request('sort', 'date_desc') == 'date_desc' ? 'selected' : '' }}>Tanggal Terbaru</option>
-                        <option value="date_asc" {{ request('sort') == 'date_asc' ? 'selected' : '' }}>Tanggal Terlama</option>
-                        <option value="amount_desc" {{ request('sort') == 'amount_desc' ? 'selected' : '' }}>Jumlah Terbesar</option>
-                        <option value="amount_asc" {{ request('sort') == 'amount_asc' ? 'selected' : '' }}>Jumlah Terkecil</option>
-                    </select>
-                </div>
-                <div class="col-4 d-grid">
-                    <button class="btn btn-accent btn-sm" type="submit">Terapkan</button>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    {{-- ===================== LIST TRANSAKSI ===================== --}}
-    <div class="txn-list mb-4">
-        @forelse ($transactions as $trx)
-            <div class="txn-row" data-bs-toggle="modal" data-bs-target="#editModal{{ $trx->id }}" role="button">
-                @if ($trx->image)
-                    <img src="{{ $trx->image_url }}" class="txn-avatar-img" alt="bukti"
-                         onclick="event.stopPropagation()" data-bs-toggle="modal" data-bs-target="#previewModal{{ $trx->id }}">
-                @else
-                    <div class="txn-avatar {{ categoryChipClass($trx->category) }}">{{ categoryIcon($trx->category) }}</div>
-                @endif
-
-                <div class="txn-info">
-                    <div class="txn-title">{{ $trx->title }}</div>
-                    <div class="txn-meta">{{ $trx->category }} &middot; {{ $trx->date->translatedFormat('d M') }}</div>
-                </div>
-
-                <div class="txn-right">
-                    <div class="txn-amount {{ $trx->type == 'pemasukan' ? 'text-income' : 'text-expense' }}">
-                        {{ $trx->type == 'pemasukan' ? '+' : '-' }}{{ number_format($trx->amount, 0, ',', '.') }}
-                    </div>
-                    <div class="dropdown" onclick="event.stopPropagation()">
-                        <button class="btn-icon-ghost" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                        <ul class="dropdown-menu dropdown-menu-end dropdown-dark">
-                            <li><button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editModal{{ $trx->id }}">
-                                <i class="bi bi-pencil me-2"></i>Edit</button></li>
-                            <li><button type="button" class="dropdown-item text-danger btn-delete-trigger"
-                                        data-bs-toggle="modal" data-bs-target="#deleteModal"
-                                        data-action="{{ route('transactions.destroy', $trx) }}"
-                                        data-title="{{ $trx->title }}">
-                                <i class="bi bi-trash me-2"></i>Hapus</button></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            @if ($trx->image)
-                <div class="modal fade" id="previewModal{{ $trx->id }}" tabindex="-1">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header border-0"><h6 class="modal-title">Bukti Transaksi</h6>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                            <div class="modal-body text-center">
-                                <img src="{{ $trx->image_url }}" class="img-fluid rounded-4" alt="bukti transaksi">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            {{-- Modal Edit (bottom-sheet) --}}
-            <div class="modal fade sheet-modal" id="editModal{{ $trx->id }}" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="sheet-handle"></div>
-                        <form action="{{ route('transactions.update', $trx) }}" method="POST" enctype="multipart/form-data">
-                            @csrf @method('PUT')
-                            <div class="modal-header border-0">
-                                <h6 class="modal-title">Edit Transaksi</h6>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-2">
-                                    <label class="form-label">Judul</label>
-                                    <input type="text" name="title" class="form-control" value="{{ $trx->title }}" required>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Tipe</label>
-                                    <select name="type" class="form-select" required>
-                                        <option value="pemasukan" {{ $trx->type == 'pemasukan' ? 'selected' : '' }}>Pemasukan</option>
-                                        <option value="pengeluaran" {{ $trx->type == 'pengeluaran' ? 'selected' : '' }}>Pengeluaran</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Jumlah (Rp)</label>
-                                    <input type="number" step="0.01" name="amount" class="form-control" value="{{ $trx->amount }}" required>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Kategori</label>
-                                    <input type="text" name="category" list="category-list" class="form-control" value="{{ $trx->category }}" required>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Catatan</label>
-                                    <textarea name="description" class="form-control" rows="2">{{ $trx->description }}</textarea>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Tanggal</label>
-                                    <input type="date" name="date" class="form-control" value="{{ $trx->date->format('Y-m-d') }}" required>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Ganti Gambar (opsional)</label>
-                                    <input type="file" name="image" class="form-control" accept="image/*">
-                                </div>
-                            </div>
-                            <div class="modal-footer border-0">
-                                <button type="submit" class="btn btn-accent w-100">Simpan Perubahan</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        @empty
-            <div class="card-panel p-4 text-center text-muted-soft">
-                <div style="font-size:2rem;">🌱</div>
-                Belum ada transaksi yang cocok. Coba ubah filter, atau tambahkan transaksi baru.
-            </div>
-        @endforelse
-    </div>
-
-    <div class="d-flex justify-content-center mb-4">
-        {{ $transactions->links() }}
-    </div>
-
-    {{-- ===================== GRAFIK ===================== --}}
-    <div id="laporan-section">
-        <div class="section-head"><h6>Laporan</h6></div>
-        <div class="card-panel p-3 mb-3">
-            <div class="small text-muted-soft mb-2">Pengeluaran per Kategori (Bulan Ini)</div>
-            <canvas id="chartCategory" height="200"></canvas>
-        </div>
-        <div class="card-panel p-3 mb-4">
-            <div class="small text-muted-soft mb-2">Tren 6 Bulan Terakhir</div>
-            <canvas id="chartTrend" height="200"></canvas>
-        </div>
-    </div>
-
-    <datalist id="category-list">
-        @foreach (\App\Models\Transaction::DEFAULT_CATEGORIES as $cat)
-            <option value="{{ $cat }}">
-        @endforeach
-    </datalist>
-
-    {{-- ===================== MODAL TAMBAH (bottom-sheet) ===================== --}}
-    <div class="modal fade sheet-modal" id="addModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="sheet-handle"></div>
-                <form action="{{ route('transactions.store') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="modal-header border-0">
-                        <h6 class="modal-title">Tambah Transaksi</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        {{-- ===== CATAT CEPAT ===== --}}
-                        <div class="quick-add-box mb-3">
-                            <label class="form-label mb-2"><i class="bi bi-stars me-1"></i>Catat Cepat</label>
-                            <div class="d-flex gap-2">
-                                <input type="text" id="quickText" class="form-control"
-                                       placeholder="Contoh: makan coto sama ayang 39k">
-                                <button type="button" id="quickParseBtn" class="btn btn-accent flex-shrink-0" style="width:48px;">
-                                    <i class="bi bi-magic" id="quickParseIcon"></i>
-                                </button>
-                            </div>
-                            <div class="quick-hint">Ketik bebas, lalu tekan Enter atau tombol ✨ — sisanya diisi otomatis di bawah.</div>
-
-                            <div id="quickPreview" class="quick-preview d-none">
-                                <div class="quick-preview-title"><i class="bi bi-check-circle-fill"></i> Terdeteksi!</div>
-                                <div class="quick-preview-row"><i class="bi bi-tag"></i> Tipe: <span id="qpType"></span></div>
-                                <div class="quick-preview-row"><i class="bi bi-pencil-square"></i> Keterangan: <span id="qpTitle"></span></div>
-                                <div class="quick-preview-row"><i class="bi bi-cash-coin"></i> Jumlah: <span id="qpAmount"></span></div>
-                                <div class="quick-preview-row"><i class="bi bi-calendar3"></i> Tanggal: <span id="qpDate"></span></div>
-                                <div class="quick-preview-note">Cek dulu field di bawah sebelum simpan ya, kalau ada yang salah tinggal diedit.</div>
-                            </div>
-                        </div>
-
-                        <div class="divider-or"><span>atau isi manual</span></div>
-
-                        <div class="segmented mb-3" id="typeSegmented">
-                            <input type="radio" name="type" id="typeExpense" value="pengeluaran" class="d-none" checked>
-                            <label for="typeExpense" class="segmented-item seg-expense">Pengeluaran</label>
-                            <input type="radio" name="type" id="typeIncome" value="pemasukan" class="d-none">
-                            <label for="typeIncome" class="segmented-item seg-income">Pemasukan</label>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Judul</label>
-                            <input type="text" name="title" class="form-control" placeholder="Contoh: Makan siang kantor" required value="{{ old('title') }}">
-                            @error('title') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Jumlah (Rp)</label>
-                            <input type="number" step="0.01" min="0" name="amount" class="form-control" placeholder="0" required value="{{ old('amount') }}">
-                            @error('amount') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Kategori</label>
-                            <input type="text" name="category" list="category-list" class="form-control" placeholder="Pilih atau ketik kategori baru" required value="{{ old('category') }}">
-                            @error('category') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Catatan (opsional)</label>
-                            <textarea name="description" class="form-control" rows="2">{{ old('description') }}</textarea>
-                        </div>
-
-                        <div class="row g-2">
-                            <div class="col-7">
-                                <label class="form-label">Tanggal</label>
-                                <input type="date" name="date" class="form-control" required value="{{ old('date', now()->format('Y-m-d')) }}">
-                                @error('date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                            </div>
-                            <div class="col-5">
-                                <label class="form-label">Bukti (opsional)</label>
-                                <input type="file" name="image" class="form-control" accept="image/*">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0">
-                        <button type="submit" class="btn btn-accent w-100">Simpan Transaksi</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modal Atur Budget --}}
-    <div class="modal fade sheet-modal" id="budgetModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="sheet-handle"></div>
-                <form action="{{ route('budgets.store') }}" method="POST">
-                    @csrf
-                    <div class="modal-header border-0">
-                        <h6 class="modal-title">Atur Budget Kategori</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Kategori</label>
-                            <input type="text" name="category" list="category-list" class="form-control" required placeholder="Contoh: Makan">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Batas Anggaran (Rp)</label>
-                            <input type="number" step="0.01" min="0" name="amount" class="form-control" required placeholder="1500000">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Bulan</label>
-                            <input type="month" name="month" class="form-control" value="{{ now()->format('Y-m') }}" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0">
-                        <button type="submit" class="btn btn-accent w-100">Simpan Budget</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modal Konfirmasi Hapus --}}
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-0">
-                    <h6 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-1"></i> Konfirmasi Hapus</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">Yakin ingin menghapus <strong id="deleteModalTitle"></strong>?</div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-sm btn-outline-light" data-bs-dismiss="modal">Batal</button>
-                    <form id="deleteForm" method="POST">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-danger">Ya, Hapus</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-@endsection
-
-@section('scripts')
 <style>
-    .hero-balance {
-        background: linear-gradient(155deg, #241d33, #1a1626);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 26px 24px;
+    /* Category Badges & Squircles */
+    .icon-squircle {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        flex-shrink: 0;
     }
-    .hero-label { color: var(--text-muted); font-size: .85rem; font-weight: 600; }
-    .hero-number { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-top: 2px; }
-    .hero-pill {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 7px 13px; border-radius: 999px; font-size: .82rem; font-weight: 700;
+    .icon-squircle-sm {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
     }
-    .hero-pill-income { background: var(--income-soft); color: var(--income); }
-    .hero-pill-expense { background: var(--expense-soft); color: var(--expense); }
 
-    .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .section-head h6 { margin: 0; font-weight: 800; font-size: 1rem; }
-    .link-action { background: none; border: none; color: var(--accent); font-size: .82rem; font-weight: 700; padding: 0; }
+    /* Color Tokens for Categories with High Contrast */
+    .cat-amber   { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .cat-orange  { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+    .cat-blue    { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .cat-indigo  { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+    .cat-rose    { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+    .cat-purple  { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .cat-cyan    { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+    .cat-violet  { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+    .cat-emerald { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .cat-fuchsia { background: rgba(217, 70, 239, 0.2); color: #e879f9; }
+    .cat-slate   { background: rgba(255, 255, 255, 0.14); color: #ffffff; }
 
-    .scroll-x { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; }
-    .scroll-x::-webkit-scrollbar { display: none; }
-
-    .chip {
-        flex: 0 0 auto; scroll-snap-align: start;
-        background: var(--panel); border: 1px solid var(--border); color: var(--text-muted);
-        padding: 8px 16px; border-radius: 999px; font-size: .82rem; font-weight: 600; white-space: nowrap;
+    /* Hero Overview Card */
+    .hero-overview {
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: var(--card-shadow-sm);
+        position: relative;
+        overflow: hidden;
     }
-    .chip-active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-
-    .segmented { display: flex; background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
-    .segmented-item { flex: 1; text-align: center; padding: 8px 0; border-radius: 999px; color: var(--text-muted); font-size: .85rem; font-weight: 700; cursor: pointer; }
-    .segmented-item.active, #typeExpense:checked ~ .seg-expense, #typeIncome:checked ~ .seg-income {
-        background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border);
+    .hero-eyebrow {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
     }
-    .seg-expense { order: 1; } .seg-income { order: 2; } #typeExpense { order: 0; } #typeIncome { order: 1; }
-
-    .budget-chip-card {
-        flex: 0 0 210px; scroll-snap-align: start;
-        background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md);
-        padding: 14px;
+    .hero-balance-val {
+        font-size: 2.25rem;
+        font-weight: 800;
+        letter-spacing: -0.035em;
+        color: var(--text-primary);
+        line-height: 1.15;
+        margin: 6px 0 16px;
     }
-    .budget-track { height: 7px; border-radius: 999px; background: var(--bg-elevated); overflow: hidden; }
-    .budget-fill { height: 100%; border-radius: 999px; background: var(--accent); }
-    .budget-fill.warn { background: #ffd166; }
-    .budget-fill.over { background: var(--expense); }
-    .btn-icon-ghost { background: none; border: none; color: var(--text-faint); padding: 2px 6px; }
-
-    .txn-list { display: flex; flex-direction: column; gap: 8px; }
-    .txn-row {
-        display: flex; align-items: center; gap: 12px;
-        background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md);
-        padding: 12px 14px; cursor: pointer;
+    @media (max-width: 576px) {
+        .hero-balance-val { font-size: 1.85rem; }
     }
-    .txn-avatar {
-        width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-    }
-    .txn-avatar-img { width: 44px; height: 44px; border-radius: 14px; object-fit: cover; flex-shrink: 0; cursor: pointer; }
-    .chip-c1 { background: var(--accent-soft); }
-    .chip-c2 { background: var(--income-soft); }
-    .chip-c3 { background: var(--expense-soft); }
-    .chip-c4 { background: var(--lavender-soft); }
-    .chip-c5 { background: rgba(139, 191, 255, .16); }
-    .txn-info { flex: 1; min-width: 0; }
-    .txn-title { font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .txn-meta { color: var(--text-faint); font-size: .76rem; }
-    .txn-right { display: flex; align-items: center; gap: 4px; }
-    .txn-amount { font-weight: 700; font-size: .9rem; white-space: nowrap; }
-    .text-income { color: var(--income); }
-    .text-expense { color: var(--expense); }
 
-    .dropdown-dark { background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-    .dropdown-dark .dropdown-item { color: var(--text); font-size: .88rem; padding: 10px 14px; }
-    .dropdown-dark .dropdown-item:hover { background: var(--bg-elevated); color: var(--text); }
-
-    /* ===== Catat Cepat ===== */
-    .quick-add-box {
-        background: linear-gradient(150deg, var(--accent-soft), transparent 70%);
-        border: 1px solid rgba(255,177,94,.3);
-        border-radius: var(--radius-md);
-        padding: 14px;
+    .stat-pill {
+        background: var(--bg-surface-elevated);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
     }
-    .quick-hint { color: var(--text-faint); font-size: .74rem; margin-top: 6px; }
-    #quickText { background: var(--bg); }
-    .quick-preview {
-        margin-top: 12px; background: var(--income-soft); border: 1px solid rgba(126,232,176,.3);
-        border-radius: var(--radius-sm); padding: 12px 14px;
-        animation: quickPop .25s ease;
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
     }
-    @keyframes quickPop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-    .quick-preview-title { color: var(--income); font-weight: 700; font-size: .88rem; margin-bottom: 6px; }
-    .quick-preview-row { font-size: .82rem; color: var(--text); margin-bottom: 2px; }
-    .quick-preview-row span { font-weight: 600; }
-    .quick-preview-note { color: var(--text-faint); font-size: .74rem; margin-top: 6px; }
-
-    .divider-or {
-        display: flex; align-items: center; gap: 10px; margin: 16px 0;
-        color: var(--text-faint); font-size: .76rem;
+    .stat-icon-income  { background: var(--income-soft); color: var(--income); }
+    .stat-icon-expense { background: var(--expense-soft); color: var(--expense); }
+    .stat-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
     }
-    .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .stat-value {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-    .field-flash { animation: fieldFlash 1s ease; }
-    @keyframes fieldFlash {
-        0% { box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+    /* Smart Command Bar (Quick Input) */
+    .command-box {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 14px 16px;
+        box-shadow: var(--card-shadow-sm);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .command-box:focus-within {
+        border-color: var(--brand-primary);
+        box-shadow: 0 0 0 3px var(--brand-primary-soft);
+    }
+    .command-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .command-label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .command-badge-key {
+        font-size: 0.68rem;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 6px;
+        background: var(--bg-surface-elevated);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+    }
+    .command-input-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .command-input {
+        flex: 1;
+        background: var(--bg-surface-elevated);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: var(--text-primary);
+        font-size: 0.92rem;
+        outline: none;
+        transition: border-color 0.15s ease;
+    }
+    .command-input:focus {
+        border-color: var(--brand-primary);
+    }
+    .command-btn {
+        background: var(--brand-primary);
+        color: var(--brand-btn-text);
+        border: none;
+        border-radius: 10px;
+        padding: 0 16px;
+        height: 42px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+    }
+    .command-btn:hover {
+        background: var(--brand-primary-hover);
+        color: var(--brand-btn-text);
+    }
+    .command-preview {
+        margin-top: 10px;
+        background: var(--bg-surface-elevated);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.82rem;
+        animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Segmented Filter Control */
+    .segmented-control {
+        display: flex;
+        background: var(--bg-surface-elevated);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 4px;
+        gap: 4px;
+    }
+    .segmented-btn {
+        flex: 1;
+        text-align: center;
+        padding: 7px 0;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: none;
+        background: transparent;
+    }
+    .segmented-btn.active {
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid var(--border-color);
+    }
+
+    /* Category Chips Carousel */
+    .chip-scroll {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scroll-snap-type: x proximity;
+    }
+    .chip-scroll::-webkit-scrollbar { display: none; }
+    .cat-chip {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        padding: 6px 13px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+    }
+    .cat-chip:hover {
+        background: var(--bg-surface-hover);
+        color: var(--text-primary);
+    }
+    .cat-chip.active {
+        background: var(--brand-primary);
+        border-color: var(--brand-primary);
+        color: var(--brand-btn-text);
+    }
+
+    /* Transaction Rows */
+    .txn-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: all 0.15s ease;
+        cursor: pointer;
+    }
+    .txn-card:hover {
+        background: var(--bg-surface-hover);
+        border-color: var(--border-color-hover);
+        transform: translateY(-1px);
+    }
+    .txn-thumb {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        object-fit: cover;
+        flex-shrink: 0;
+        cursor: pointer;
+        border: 1px solid var(--border-color);
+    }
+    .txn-content {
+        flex: 1;
+        min-width: 0;
+    }
+    .txn-title {
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .txn-meta {
+        font-size: 0.76rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
+    }
+    .txn-amount-box {
+        text-align: right;
+    }
+    .txn-amount {
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+    .amount-income  { color: var(--income); }
+    .amount-expense { color: var(--text-primary); }
+
+    /* Action Buttons inside row */
+    .btn-icon-soft {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .btn-icon-soft:hover {
+        background: var(--bg-surface-elevated);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    /* Budget Item Card */
+    .budget-card {
+        background: var(--bg-surface-elevated);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+    }
+    .budget-progress-track {
+        height: 7px;
+        border-radius: 999px;
+        background: var(--bg-surface-hover);
+        overflow: hidden;
+        margin: 8px 0;
+    }
+    .budget-progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.4s ease;
+    }
+    .progress-safe { background: var(--income); }
+    .progress-warn { background: var(--warning); }
+    .progress-over { background: var(--expense); }
+
+    /* Section Headings */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    .section-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .section-action {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--brand-primary);
+        background: transparent;
+        border: none;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+    }
+    .section-action:hover {
+        text-decoration: underline;
+    }
+
+    /* Flash Highlight Animation */
+    .field-flash {
+        animation: flashHighlight 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes flashHighlight {
+        0% { box-shadow: 0 0 0 3px var(--brand-primary-soft); border-color: var(--brand-primary); }
         100% { box-shadow: none; }
     }
 </style>
 
+<div class="row g-4 mb-5">
+    {{-- ===================== LEFT / MAIN FEED COLUMN ===================== --}}
+    <div class="col-12 col-lg-7 col-xl-7">
+        
+        {{-- 1. HERO BALANCE CARD --}}
+        <div class="hero-overview mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="hero-eyebrow">Saldo Bersih Periode Ini</span>
+                <span class="badge {{ $saldo >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }} rounded-pill px-2 py-1 font-monospace" style="font-size: 0.72rem; font-weight: 600;">
+                    <i class="bi {{ $saldo >= 0 ? 'bi-shield-check' : 'bi-exclamation-triangle' }} me-1"></i>
+                    {{ $saldo >= 0 ? 'Arus Kas Sehat' : 'Defisit Pengeluaran' }}
+                </span>
+            </div>
+
+            <div class="hero-balance-val tabular-nums">
+                Rp {{ number_format($saldo, 0, ',', '.') }}
+            </div>
+
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="stat-pill">
+                        <div class="stat-icon stat-icon-income">
+                            <i class="bi bi-arrow-down-left"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="stat-label">Pemasukan</div>
+                            <div class="stat-value tabular-nums text-success">
+                                +{{ number_format($totalPemasukan, 0, ',', '.') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-pill">
+                        <div class="stat-icon stat-icon-expense">
+                            <i class="bi bi-arrow-up-right"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="stat-label">Pengeluaran</div>
+                            <div class="stat-value tabular-nums text-danger">
+                                -{{ number_format($totalPengeluaran, 0, ',', '.') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 2. SMART COMMAND BAR (INPUT CEPAT) --}}
+        <div class="command-box mb-4">
+            <div class="command-header">
+                <span class="command-label">
+                    <i class="bi bi-terminal" style="color: var(--brand-primary);"></i>
+                    Input Cepat
+                </span>
+                <span class="command-badge-key">Tekan Enter ↵</span>
+            </div>
+            <div class="command-input-group">
+                <input type="text" id="quickText" class="command-input"
+                       placeholder="Contoh: Makan siang nasi padang 32k atau Gaji freelance 2.5jt...">
+                <button type="button" id="quickParseBtn" class="command-btn" title="Proses dan isi otomatis">
+                    <i class="bi bi-arrow-return-left" id="quickParseIcon"></i>
+                    <span class="d-none d-sm-inline">Proses</span>
+                </button>
+            </div>
+
+            <div id="quickPreview" class="command-preview d-none">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="fw-bold text-success"><i class="bi bi-check2-circle me-1"></i> Data Terdeteksi:</span>
+                    <button type="button" class="btn-close" style="font-size: 0.65rem;" onclick="document.getElementById('quickPreview').classList.add('d-none')"></button>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <span class="badge bg-secondary-subtle" style="color: var(--text-primary);"><i class="bi bi-pencil me-1"></i><span id="qpTitle">-</span></span>
+                    <span class="badge bg-primary-subtle text-primary"><i class="bi bi-tag me-1"></i><span id="qpCategory">-</span></span>
+                    <span class="badge bg-success-subtle text-success tabular-nums"><i class="bi bi-cash me-1"></i><span id="qpAmount">-</span></span>
+                    <span class="badge bg-secondary-subtle" style="color: var(--text-primary);"><i class="bi bi-calendar3 me-1"></i><span id="qpDate">-</span></span>
+                </div>
+                <div class="small text-muted mt-2" style="font-size: 0.74rem;">
+                    Formulir di modal telah terisi otomatis. Klik tombol "Catat Transaksi" untuk meninjau atau menyimpan.
+                </div>
+            </div>
+        </div>
+
+        {{-- 3. FILTER TIPE & KATEGORI --}}
+        <div class="mb-3">
+            @php
+                $tipeOptions = ['' => 'Semua', 'pengeluaran' => 'Pengeluaran', 'pemasukan' => 'Pemasukan'];
+                $baseQuery = request()->except('type');
+            @endphp
+            <div class="segmented-control mb-3">
+                @foreach ($tipeOptions as $val => $label)
+                    <a href="{{ route('transactions.index', array_merge($baseQuery, $val ? ['type' => $val] : [])) }}"
+                       class="segmented-btn {{ request('type', '') == $val ? 'active' : '' }}">
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
+
+            {{-- Kategori Horizontal Scroll --}}
+            <div class="chip-scroll mb-3">
+                @php $catBaseQuery = request()->except('kategori'); @endphp
+                <a href="{{ route('transactions.index', $catBaseQuery) }}"
+                   class="cat-chip {{ !request('kategori') ? 'active' : '' }}">
+                    <i class="bi bi-grid"></i> Semua Kategori
+                </a>
+                @foreach ($categories as $cat)
+                    @php $meta = categoryMeta($cat); @endphp
+                    <a href="{{ route('transactions.index', array_merge($catBaseQuery, ['kategori' => $cat])) }}"
+                       class="cat-chip {{ request('kategori') == $cat ? 'active' : '' }}">
+                        <i class="bi {{ $meta['icon'] }}"></i> {{ $cat }}
+                    </a>
+                @endforeach
+            </div>
+
+            {{-- Toolbar Pencarian & Urutan --}}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-semibold text-muted">
+                    Menampilkan {{ $transactions->total() }} Transaksi
+                </span>
+                <button class="btn-ghost-action" style="font-size: 0.8rem; padding: 4px 10px;" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilter">
+                    <i class="bi bi-sliders"></i> Filter & Cari
+                </button>
+            </div>
+
+            <div class="collapse mb-3 {{ request()->hasAny(['q', 'bulan', 'sort']) ? 'show' : '' }}" id="advancedFilter">
+                <form action="{{ route('transactions.index') }}" method="GET" class="card-panel p-3">
+                    @foreach (request()->except(['q','bulan','sort']) as $key => $val)
+                        <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                    @endforeach
+                    <div class="row g-2">
+                        <div class="col-7">
+                            <label class="form-label">Kata Kunci</label>
+                            <input type="text" name="q" class="form-control form-control-sm" placeholder="Cari judul / catatan..." value="{{ request('q') }}">
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label">Bulan</label>
+                            <input type="month" name="bulan" class="form-control form-control-sm" value="{{ request('bulan') }}">
+                        </div>
+                        <div class="col-8">
+                            <label class="form-label">Urutan</label>
+                            <select name="sort" class="form-select form-select-sm">
+                                <option value="date_desc" {{ request('sort', 'date_desc') == 'date_desc' ? 'selected' : '' }}>Tanggal Terbaru</option>
+                                <option value="date_asc" {{ request('sort') == 'date_asc' ? 'selected' : '' }}>Tanggal Terlama</option>
+                                <option value="amount_desc" {{ request('sort') == 'amount_desc' ? 'selected' : '' }}>Nominal Terbesar</option>
+                                <option value="amount_asc" {{ request('sort') == 'amount_asc' ? 'selected' : '' }}>Nominal Terkecil</option>
+                            </select>
+                        </div>
+                        <div class="col-4 d-grid">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-primary-action btn-sm justify-content-center" type="submit">Terapkan</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{-- 4. DAFTAR TRANSAKSI --}}
+        <div class="d-flex flex-column gap-2 mb-4">
+            @forelse ($transactions as $trx)
+                @php $meta = categoryMeta($trx->category); @endphp
+                <div class="txn-card" data-edit-target="#editModal{{ $trx->id }}">
+                    @if ($trx->image)
+                        <img src="{{ $trx->image_url }}" class="txn-thumb" alt="bukti"
+                             data-bs-toggle="modal" data-bs-target="#previewModal{{ $trx->id }}" title="Lihat Bukti Foto">
+                    @else
+                        <div class="icon-squircle cat-{{ $meta['color'] }}">
+                            <i class="bi {{ $meta['icon'] }}"></i>
+                        </div>
+                    @endif
+
+                    <div class="txn-content">
+                        <div class="txn-title">{{ $trx->title }}</div>
+                        <div class="txn-meta">
+                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.7rem; font-weight: 600;">{{ $trx->category }}</span>
+                            <span>&bull;</span>
+                            <span>{{ $trx->date->translatedFormat('d M Y') }}</span>
+                            @if ($trx->description)
+                                <span>&bull;</span>
+                                <span class="text-truncate d-none d-sm-inline" style="max-width: 140px;">{{ $trx->description }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="txn-amount-box">
+                        <div class="txn-amount tabular-nums {{ $trx->type == 'pemasukan' ? 'amount-income' : 'amount-expense' }}">
+                            {{ $trx->type == 'pemasukan' ? '+' : '-' }}Rp {{ number_format($trx->amount, 0, ',', '.') }}
+                        </div>
+                    </div>
+
+                    {{-- Actions Dropdown --}}
+                    <div class="dropdown">
+                        <button type="button" class="btn-icon-soft" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu Aksi">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="border: 1px solid var(--border-color); background: var(--bg-surface); border-radius: 12px; font-size: 0.85rem;">
+                            <li>
+                                <button type="button" class="dropdown-item py-2 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#editModal{{ $trx->id }}">
+                                    <i class="bi bi-pencil" style="color: var(--brand-primary);"></i> Edit Transaksi
+                                </button>
+                            </li>
+                            @if ($trx->image)
+                                <li>
+                                    <button type="button" class="dropdown-item py-2 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#previewModal{{ $trx->id }}">
+                                        <i class="bi bi-image" style="color: var(--text-muted);"></i> Lihat Bukti
+                                    </button>
+                                </li>
+                            @endif
+                            <li><hr class="dropdown-divider" style="border-color: var(--border-color);"></li>
+                            <li>
+                                <button type="button" class="dropdown-item py-2 text-danger d-flex align-items-center gap-2 btn-delete-trigger"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                        data-action="{{ route('transactions.destroy', $trx) }}"
+                                        data-title="{{ $trx->title }}">
+                                    <i class="bi bi-trash"></i> Hapus
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                {{-- Modal Preview Gambar --}}
+                @if ($trx->image)
+                    <div class="modal fade" id="previewModal{{ $trx->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header border-0 pb-0">
+                                    <h6 class="modal-title font-semibold">Bukti Transaksi — {{ $trx->title }}</h6>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body text-center p-4">
+                                    <img src="{{ $trx->image_url }}" class="img-fluid rounded-3 shadow-sm" alt="bukti transaksi" style="max-height: 70vh;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Modal Edit Transaksi --}}
+                <div class="modal fade sheet-modal" id="editModal{{ $trx->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="sheet-handle"></div>
+                            <form action="{{ route('transactions.update', $trx) }}" method="POST" enctype="multipart/form-data">
+                                @csrf @method('PUT')
+                                <div class="modal-header border-0 pb-2">
+                                    <h6 class="modal-title font-semibold">Edit Transaksi</h6>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body pt-0">
+                                    <div class="mb-3">
+                                        <label class="form-label">Tipe Transaksi</label>
+                                        <div class="segmented-control">
+                                            <label class="segmented-btn {{ $trx->type == 'pengeluaran' ? 'active' : '' }}" style="cursor: pointer;">
+                                                <input type="radio" name="type" value="pengeluaran" class="d-none" {{ $trx->type == 'pengeluaran' ? 'checked' : '' }} onchange="this.parentElement.parentElement.querySelectorAll('.segmented-btn').forEach(b => b.classList.remove('active')); this.parentElement.classList.add('active');">
+                                                Pengeluaran
+                                            </label>
+                                            <label class="segmented-btn {{ $trx->type == 'pemasukan' ? 'active' : '' }}" style="cursor: pointer;">
+                                                <input type="radio" name="type" value="pemasukan" class="d-none" {{ $trx->type == 'pemasukan' ? 'checked' : '' }} onchange="this.parentElement.parentElement.querySelectorAll('.segmented-btn').forEach(b => b.classList.remove('active')); this.parentElement.classList.add('active');">
+                                                Pemasukan
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Judul Transaksi</label>
+                                        <input type="text" name="title" class="form-control" value="{{ $trx->title }}" required>
+                                    </div>
+
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-7">
+                                            <label class="form-label">Jumlah (Rp)</label>
+                                            <input type="number" step="0.01" name="amount" class="form-control tabular-nums" value="{{ $trx->amount }}" required>
+                                        </div>
+                                        <div class="col-5">
+                                            <label class="form-label">Kategori</label>
+                                            <input type="text" name="category" list="category-list" class="form-control" value="{{ $trx->category }}" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label">Tanggal</label>
+                                            <input type="date" name="date" class="form-control" value="{{ $trx->date->format('Y-m-d') }}" required>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">Ganti Bukti (opsional)</label>
+                                            <input type="file" name="image" class="form-control" accept="image/*">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Catatan</label>
+                                        <textarea name="description" class="form-control" rows="2">{{ $trx->description }}</textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-0 pt-0">
+                                    <button type="submit" class="btn btn-primary-action w-100 justify-content-center">Simpan Perubahan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="card-panel p-5 text-center text-muted">
+                    <div class="icon-squircle cat-slate mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.5rem;">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                    <div class="fw-bold mb-1" style="color: var(--text-primary); font-size: 1.05rem;">Belum Ada Transaksi</div>
+                    <p class="small text-muted mb-3">Tidak ada transaksi yang cocok dengan filter saat ini.</p>
+                    <button type="button" class="btn btn-primary-action btn-sm mx-auto" data-bs-toggle="modal" data-bs-target="#addModal">
+                        <i class="bi bi-plus-lg"></i> Catat Transaksi Baru
+                    </button>
+                </div>
+            @endforelse
+        </div>
+
+        {{-- Pagination --}}
+        <div class="d-flex justify-content-center mb-4">
+            {{ $transactions->links() }}
+        </div>
+    </div>
+
+    {{-- ===================== RIGHT / SIDEBAR COLUMN ===================== --}}
+    <div class="col-12 col-lg-5 col-xl-5">
+
+        {{-- 1. WIDGET BUDGET BULAN INI --}}
+        <div class="card-panel p-4 mb-4" id="budget-section">
+            <div class="section-header">
+                <h6 class="section-title">
+                    <i class="bi bi-pie-chart" style="color: var(--brand-primary);"></i>
+                    Budget Bulan Ini
+                </h6>
+                <button class="section-action" type="button" data-bs-toggle="modal" data-bs-target="#budgetModal">
+                    <i class="bi bi-gear-fill"></i> Atur
+                </button>
+            </div>
+
+            @if ($budgets->isNotEmpty())
+                <div class="mb-3 d-flex justify-content-between align-items-center small text-muted">
+                    <span>Total Terpakai: <strong class="tabular-nums" style="color: var(--text-primary);">Rp {{ number_format($totalBudgetSpent, 0, ',', '.') }}</strong></span>
+                    <span class="badge {{ $budgetOverallPercent > 100 ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary' }} rounded-pill font-monospace">
+                        {{ $budgetOverallPercent }}%
+                    </span>
+                </div>
+
+                @foreach ($budgets as $budget)
+                    @php
+                        $meta = categoryMeta($budget->category);
+                        $barClass = $budget->is_over ? 'progress-over' : ($budget->percent >= 80 ? 'progress-warn' : 'progress-safe');
+                    @endphp
+                    <div class="budget-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="icon-squircle-sm cat-{{ $meta['color'] }}">
+                                    <i class="bi {{ $meta['icon'] }}"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold small" style="color: var(--text-primary); font-size: 0.9rem;">{{ $budget->category }}</div>
+                                    <div class="text-muted tabular-nums" style="font-size: 0.78rem;">
+                                        Rp {{ number_format($budget->spent, 0, ',', '.') }} / {{ number_format($budget->amount, 0, ',', '.') }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge {{ $budget->is_over ? 'bg-danger-subtle text-danger' : ($budget->percent >= 80 ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle') }} font-monospace" style="font-size: 0.75rem; color: var(--text-primary);">
+                                    {{ $budget->percent }}%
+                                </span>
+                                <form action="{{ route('budgets.destroy', $budget) }}" method="POST" onsubmit="return confirm('Hapus budget kategori {{ $budget->category }}?')">
+                                    @csrf @method('DELETE')
+                                    <button class="btn-icon-soft" style="width: 24px; height: 24px;" title="Hapus"><i class="bi bi-x"></i></button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="budget-progress-track">
+                            <div class="budget-progress-fill {{ $barClass }}" style="width: {{ min($budget->percent, 100) }}%;"></div>
+                        </div>
+                    </div>
+                @endforeach
+            @else
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-bullseye mb-2 d-block" style="font-size: 1.8rem; opacity: 0.5;"></i>
+                    <div class="small fw-semibold mb-1" style="color: var(--text-primary); font-size: 0.92rem;">Belum Ada Budget Ditentukan</div>
+                    <div class="small mb-3">Atur batas anggaran per kategori agar keuangan tetap terkendali.</div>
+                    <button type="button" class="btn btn-ghost-action btn-sm" data-bs-toggle="modal" data-bs-target="#budgetModal">
+                        <i class="bi bi-plus-lg"></i> Buat Anggaran Sekarang
+                    </button>
+                </div>
+            @endif
+        </div>
+
+        {{-- 2. GRAFIK LAPORAN --}}
+        <div id="laporan-section">
+            <div class="card-panel p-4 mb-4">
+                <div class="section-header">
+                    <h6 class="section-title">
+                        <i class="bi bi-pie-chart-fill" style="color: #6366f1;"></i>
+                        Pengeluaran per Kategori
+                    </h6>
+                    <span class="small text-muted">Bulan Berjalan</span>
+                </div>
+                <div style="position: relative; height: 220px;">
+                    <canvas id="chartCategory"></canvas>
+                </div>
+            </div>
+
+            <div class="card-panel p-4 mb-4">
+                <div class="section-header">
+                    <h6 class="section-title">
+                        <i class="bi bi-graph-up" style="color: #10b981;"></i>
+                        Tren Arus Kas 6 Bulan
+                    </h6>
+                    <span class="small text-muted">Masuk vs Keluar</span>
+                </div>
+                <div style="position: relative; height: 200px;">
+                    <canvas id="chartTrend"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<datalist id="category-list">
+    @foreach (\App\Models\Transaction::DEFAULT_CATEGORIES as $cat)
+        <option value="{{ $cat }}">
+    @endforeach
+</datalist>
+
+{{-- ===================== MODAL TAMBAH TRANSAKSI ===================== --}}
+<div class="modal fade sheet-modal" id="addModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="sheet-handle"></div>
+            <form action="{{ route('transactions.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header border-0 pb-2">
+                    <h6 class="modal-title font-semibold">Catat Transaksi Baru</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-0">
+
+                    {{-- Tipe Selector Segmented --}}
+                    <div class="mb-3">
+                        <label class="form-label">Tipe Transaksi</label>
+                        <div class="segmented-control" id="modalTypeGroup">
+                            <label class="segmented-btn active" style="cursor: pointer;">
+                                <input type="radio" name="type" id="typeExpense" value="pengeluaran" class="d-none" checked onchange="toggleModalType(this)">
+                                Pengeluaran
+                            </label>
+                            <label class="segmented-btn" style="cursor: pointer;">
+                                <input type="radio" name="type" id="typeIncome" value="pemasukan" class="d-none" onchange="toggleModalType(this)">
+                                Pemasukan
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Judul Transaksi</label>
+                        <input type="text" name="title" class="form-control" placeholder="Contoh: Makan siang, Gaji, dsb." required value="{{ old('title') }}">
+                        @error('title') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-7">
+                            <label class="form-label">Jumlah (Rp)</label>
+                            <input type="number" step="0.01" min="0" name="amount" class="form-control tabular-nums" placeholder="0" required value="{{ old('amount') }}">
+                            @error('amount') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label">Kategori</label>
+                            <input type="text" name="category" list="category-list" class="form-control" placeholder="Pilih kategori" required value="{{ old('category') }}">
+                            @error('category') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Tanggal</label>
+                            <input type="date" name="date" class="form-control" required value="{{ old('date', now()->format('Y-m-d')) }}">
+                            @error('date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Bukti Gambar (opsional)</label>
+                            <input type="file" name="image" class="form-control" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Catatan Tambahan (opsional)</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Catatan opsional...">{{ old('description') }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="submit" class="btn btn-primary-action w-100 justify-content-center">Simpan Transaksi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- ===================== MODAL ATUR BUDGET ===================== --}}
+<div class="modal fade sheet-modal" id="budgetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="sheet-handle"></div>
+            <form action="{{ route('budgets.store') }}" method="POST">
+                @csrf
+                <div class="modal-header border-0 pb-2">
+                    <h6 class="modal-title font-semibold">Atur Batas Anggaran Kategori</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div class="mb-3">
+                        <label class="form-label">Kategori Pengeluaran</label>
+                        <input type="text" name="category" list="category-list" class="form-control" required placeholder="Contoh: Makan, Jajan, Bensin">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Batas Anggaran (Rp)</label>
+                        <input type="number" step="0.01" min="0" name="amount" class="form-control tabular-nums" required placeholder="1500000">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bulan Anggaran</label>
+                        <input type="month" name="month" class="form-control" value="{{ now()->format('Y-m') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="submit" class="btn btn-primary-action w-100 justify-content-center">Simpan Batas Anggaran</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- ===================== MODAL HAPUS TRANSAKSI ===================== --}}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-1">
+                <h6 class="modal-title text-danger font-semibold d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Konfirmasi Hapus
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Yakin ingin menghapus transaksi <strong id="deleteModalTitle" class="text-body"></strong>? Tindakan ini tidak dapat dibatalkan.
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-ghost-action btn-sm" data-bs-dismiss="modal">Batal</button>
+                <form id="deleteForm" method="POST">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-danger btn-sm">Ya, Hapus</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-    // ===== Catat Cepat: parse teks bebas lalu isi form otomatis =====
+    function toggleModalType(radio) {
+        radio.closest('.segmented-control').querySelectorAll('.segmented-btn').forEach(btn => btn.classList.remove('active'));
+        radio.parentElement.classList.add('active');
+    }
+
+    // ===== Command Bar Quick Input =====
     (function () {
         const quickText   = document.getElementById('quickText');
         const quickBtn    = document.getElementById('quickParseBtn');
@@ -528,17 +1007,12 @@
 
         function flash(el) {
             el.classList.remove('field-flash');
-            void el.offsetWidth; // restart animasi
+            void el.offsetWidth;
             el.classList.add('field-flash');
         }
 
         function formatRupiah(n) {
             return 'Rp ' + Number(n).toLocaleString('id-ID');
-        }
-
-        function formatTanggal(isoDate) {
-            const d = new Date(isoDate + 'T00:00:00');
-            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
         async function doQuickParse() {
@@ -559,35 +1033,41 @@
                     body: JSON.stringify({ text }),
                 });
 
-                if (!res.ok) throw new Error('Gagal parsing');
+                if (!res.ok) throw new Error('Gagal memproses data');
                 const data = await res.json();
 
-                // Isi field form
+                // Isi formulir modal tambah
                 addForm.querySelector('[name="title"]').value = data.title;
                 addForm.querySelector('[name="category"]').value = data.category;
                 addForm.querySelector('[name="amount"]').value = data.amount;
                 addForm.querySelector('[name="date"]').value = data.date;
 
-                const typeRadio = addForm.querySelector('#type' + (data.type === 'pemasukan' ? 'Income' : 'Expense'));
-                typeRadio.checked = true;
+                const isIncome = data.type === 'pemasukan';
+                const targetRadio = addForm.querySelector(isIncome ? '#typeIncome' : '#typeExpense');
+                targetRadio.checked = true;
+                toggleModalType(targetRadio);
 
-                // Highlight field yang baru terisi
                 ['title', 'category', 'amount', 'date'].forEach(function (name) {
-                    flash(addForm.querySelector('[name="' + name + '"]'));
+                    const el = addForm.querySelector('[name="' + name + '"]');
+                    if (el) flash(el);
                 });
 
-                // Tampilkan kartu preview
-                document.getElementById('qpType').innerText = data.type === 'pemasukan' ? 'Pemasukan' : data.category;
+                // Update info di preview bar
                 document.getElementById('qpTitle').innerText = data.title;
-                document.getElementById('qpAmount').innerText = formatRupiah(data.amount);
-                document.getElementById('qpDate').innerText = formatTanggal(data.date);
+                document.getElementById('qpCategory').innerText = data.category;
+                document.getElementById('qpAmount').innerText = (isIncome ? '+' : '-') + formatRupiah(data.amount);
+                document.getElementById('qpDate').innerText = data.date;
                 quickPreview.classList.remove('d-none');
 
+                // Buka modal secara halus agar user bisa mengonfirmasi/menyimpan
+                const modal = new bootstrap.Modal(document.getElementById('addModal'));
+                modal.show();
+
             } catch (e) {
-                alert('Gagal memproses teks. Coba isi manual di bawah ya.');
+                alert('Gagal mendeteksi format. Silakan klik tombol "Catat Transaksi" untuk memasukkan secara manual.');
             } finally {
                 quickBtn.disabled = false;
-                quickIcon.className = 'bi bi-magic';
+                quickIcon.className = 'bi bi-arrow-return-left';
             }
         }
 
@@ -600,6 +1080,7 @@
         });
     })();
 
+    // Delete modal trigger
     document.querySelectorAll('.btn-delete-trigger').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.getElementById('deleteForm').action = this.dataset.action;
@@ -607,40 +1088,160 @@
         });
     });
 
-    const palette = ['#ffb15e', '#c9aeff', '#7ee8b0', '#ff8b94', '#8bbfff', '#ffd166'];
-
-    new Chart(document.getElementById('chartCategory'), {
-        type: 'doughnut',
-        data: {
-            labels: {!! json_encode($chartCategoryLabels) !!},
-            datasets: [{
-                data: {!! json_encode($chartCategoryValues) !!},
-                backgroundColor: palette,
-                borderColor: '#1c1926',
-                borderWidth: 3,
-            }]
-        },
-        options: {
-            plugins: { legend: { position: 'bottom', labels: { color: '#f2eef8', boxWidth: 10, font: { size: 11, family: 'Plus Jakarta Sans' } } } }
+    // Delegated click on transaction card to open edit modal (ignoring dropdown and thumbnail)
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.dropdown') || e.target.closest('.txn-thumb') || e.target.closest('.modal')) {
+            return;
         }
-    });
-
-    new Chart(document.getElementById('chartTrend'), {
-        type: 'line',
-        data: {
-            labels: {!! json_encode($trendLabels) !!},
-            datasets: [
-                { label: 'Pemasukan', data: {!! json_encode($trendPemasukan) !!}, borderColor: '#7ee8b0', backgroundColor: 'rgba(126,232,176,0.12)', tension: 0.35, fill: true },
-                { label: 'Pengeluaran', data: {!! json_encode($trendPengeluaran) !!}, borderColor: '#ff8b94', backgroundColor: 'rgba(255,139,148,0.12)', tension: 0.35, fill: true }
-            ]
-        },
-        options: {
-            plugins: { legend: { labels: { color: '#f2eef8', font: { family: 'Plus Jakarta Sans' } } } },
-            scales: {
-                x: { ticks: { color: '#96909f' }, grid: { color: '#2e2a3d' } },
-                y: { ticks: { color: '#96909f' }, grid: { color: '#2e2a3d' } }
+        const card = e.target.closest('.txn-card[data-edit-target]');
+        if (card) {
+            const target = card.getAttribute('data-edit-target');
+            const modalEl = document.querySelector(target);
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
             }
         }
     });
+
+    // ===== Chart.js Configuration & Dynamic Theme Sync =====
+
+    (function() {
+        const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+        const getColors = () => ({
+            text: isDark() ? '#94a3b8' : '#64748b',
+            grid: isDark() ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
+            border: isDark() ? '#111827' : '#ffffff',
+        });
+
+        const palette = [
+            '#3b82f6', '#10b981', '#f59e0b', '#f43f5e', 
+            '#8b5cf6', '#06b6d4', '#f97316', '#a855f7'
+        ];
+
+        // 1. Category Breakdown Doughnut Chart
+        const chartCategoryCtx = document.getElementById('chartCategory');
+        const categoryLabels = {!! json_encode($chartCategoryLabels) !!};
+        const categoryValues = {!! json_encode($chartCategoryValues) !!};
+
+        let chartCategory = null;
+        if (chartCategoryCtx) {
+            chartCategory = new Chart(chartCategoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: categoryLabels.length ? categoryLabels : ['Belum Ada Data'],
+                    datasets: [{
+                        data: categoryValues.length ? categoryValues : [1],
+                        backgroundColor: categoryValues.length ? palette : ['rgba(148, 163, 184, 0.2)'],
+                        borderColor: getColors().border,
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: getColors().text,
+                                boxWidth: 10,
+                                boxHeight: 10,
+                                padding: 12,
+                                font: { size: 11, family: 'Plus Jakarta Sans', weight: '500' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. 6-Month Trend Line Chart
+        const chartTrendCtx = document.getElementById('chartTrend');
+        let chartTrend = null;
+        if (chartTrendCtx) {
+            chartTrend = new Chart(chartTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: {!! json_encode($trendLabels) !!},
+                    datasets: [
+                        {
+                            label: 'Pemasukan',
+                            data: {!! json_encode($trendPemasukan) !!},
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                            tension: 0.35,
+                            fill: true,
+                            pointRadius: 3,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Pengeluaran',
+                            data: {!! json_encode($trendPengeluaran) !!},
+                            borderColor: '#f43f5e',
+                            backgroundColor: 'rgba(244, 63, 94, 0.08)',
+                            tension: 0.35,
+                            fill: true,
+                            pointRadius: 3,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                color: getColors().text,
+                                boxWidth: 8,
+                                font: { size: 11, family: 'Plus Jakarta Sans', weight: '600' }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: getColors().text, font: { size: 11, family: 'Plus Jakarta Sans' } },
+                            grid: { color: getColors().grid }
+                        },
+                        y: {
+                            ticks: {
+                                color: getColors().text,
+                                font: { size: 10, family: 'Plus Jakarta Sans' },
+                                callback: function(val) {
+                                    if (val >= 1000000) return (val / 1000000).toFixed(1) + 'jt';
+                                    if (val >= 1000) return (val / 1000).toFixed(0) + 'rb';
+                                    return val;
+                                }
+                            },
+                            grid: { color: getColors().grid }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Listen for theme switch event and update chart colors live
+        window.addEventListener('themeChanged', function() {
+            const colors = getColors();
+            if (chartCategory) {
+                chartCategory.options.plugins.legend.labels.color = colors.text;
+                chartCategory.data.datasets[0].borderColor = colors.border;
+                chartCategory.update();
+            }
+            if (chartTrend) {
+                chartTrend.options.plugins.legend.labels.color = colors.text;
+                chartTrend.options.scales.x.ticks.color = colors.text;
+                chartTrend.options.scales.x.grid.color = colors.grid;
+                chartTrend.options.scales.y.ticks.color = colors.text;
+                chartTrend.options.scales.y.grid.color = colors.grid;
+                chartTrend.update();
+            }
+        });
+    })();
 </script>
 @endsection

@@ -9,16 +9,18 @@ use App\Models\Transaction;
 use App\Services\TransactionTextParser;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class TransactionController extends Controller
 {
     /**
-     * Dashboard: form input + tabel transaksi + grafik + budget progress
+     * Dashboard: form input + tabel transaksi + grafik + budget progress milik user yang login
      */
     public function index(Request $request)
     {
-        $query = Transaction::query();
+        $userId = Auth::id();
+        $query = Transaction::where('user_id', $userId);
 
         // Filter bulan (format: YYYY-MM)
         if ($request->filled('bulan')) {
@@ -41,27 +43,28 @@ class TransactionController extends Controller
             $keyword = $request->q;
             $query->where(function ($q) use ($keyword) {
                 $q->where('title', 'like', "%{$keyword}%")
-                  ->orWhere('description', 'like', "%{$keyword}%");
+                    ->orWhere('description', 'like', "%{$keyword}%");
             });
         }
 
         // Sorting
         $sort = $request->get('sort', 'date_desc');
         $sortMap = [
-            'date_desc'   => ['date', 'desc'],
-            'date_asc'    => ['date', 'asc'],
+            'date_desc' => ['date', 'desc'],
+            'date_asc' => ['date', 'asc'],
             'amount_desc' => ['amount', 'desc'],
-            'amount_asc'  => ['amount', 'asc'],
+            'amount_asc' => ['amount', 'asc'],
         ];
         [$sortColumn, $sortDirection] = $sortMap[$sort] ?? $sortMap['date_desc'];
         $query->orderBy($sortColumn, $sortDirection)->orderBy('id', 'desc');
 
         $transactions = $query->paginate(10)->withQueryString();
 
-        $totalPemasukan   = (clone $query)->pemasukan()->sum('amount');
+        $totalPemasukan = (clone $query)->pemasukan()->sum('amount');
         $totalPengeluaran = (clone $query)->pengeluaran()->sum('amount');
 
-        $categories = Transaction::select('category')
+        $categories = Transaction::where('user_id', $userId)
+            ->select('category')
             ->distinct()
             ->pluck('category')
             ->merge(Transaction::DEFAULT_CATEGORIES)
@@ -70,7 +73,9 @@ class TransactionController extends Controller
             ->values();
 
         // ===== Data untuk grafik pie: breakdown pengeluaran per kategori bulan berjalan =====
-        $pengeluaranBulanIni = Transaction::pengeluaran()->bulanIni()
+        $pengeluaranBulanIni = Transaction::where('user_id', $userId)
+            ->pengeluaran()
+            ->bulanIni()
             ->selectRaw('category, SUM(amount) as total')
             ->groupBy('category')
             ->orderByDesc('total')
@@ -83,19 +88,23 @@ class TransactionController extends Controller
         $trendMonths = collect(range(5, 0))->map(fn ($i) => Carbon::now()->subMonths($i)->startOfMonth());
 
         $trendLabels = $trendMonths->map(fn ($m) => $m->translatedFormat('M Y'));
-        $trendPemasukan = $trendMonths->map(function ($m) {
-            return (float) Transaction::pemasukan()
-                ->whereYear('date', $m->year)->whereMonth('date', $m->month)
+        $trendPemasukan = $trendMonths->map(function ($m) use ($userId) {
+            return (float) Transaction::where('user_id', $userId)
+                ->pemasukan()
+                ->whereYear('date', $m->year)
+                ->whereMonth('date', $m->month)
                 ->sum('amount');
         });
-        $trendPengeluaran = $trendMonths->map(function ($m) {
-            return (float) Transaction::pengeluaran()
-                ->whereYear('date', $m->year)->whereMonth('date', $m->month)
+        $trendPengeluaran = $trendMonths->map(function ($m) use ($userId) {
+            return (float) Transaction::where('user_id', $userId)
+                ->pengeluaran()
+                ->whereYear('date', $m->year)
+                ->whereMonth('date', $m->month)
                 ->sum('amount');
         });
 
-        // ===== Budget progress bulan berjalan =====
-        $budgets = Budget::bulan(Carbon::now())->get();
+        // ===== Budget progress bulan berjalan milik user =====
+        $budgets = Budget::where('user_id', $userId)->bulan(Carbon::now())->get();
 
         return view('transactions.index', compact(
             'transactions',
@@ -114,6 +123,7 @@ class TransactionController extends Controller
     public function store(StoreTransactionRequest $request)
     {
         $validated = $request->validated();
+        $validated['user_id'] = Auth::id();
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('bukti-transaksi', 'public');
@@ -128,6 +138,8 @@ class TransactionController extends Controller
 
     public function update(UpdateTransactionRequest $request, Transaction $transaction)
     {
+        abort_if($transaction->user_id !== Auth::id(), 403);
+
         $validated = $request->validated();
 
         if ($request->hasFile('image')) {
@@ -146,6 +158,8 @@ class TransactionController extends Controller
 
     public function destroy(Transaction $transaction)
     {
+        abort_if($transaction->user_id !== Auth::id(), 403);
+
         if ($transaction->image) {
             Storage::disk('public')->delete($transaction->image);
         }
@@ -159,9 +173,7 @@ class TransactionController extends Controller
 
     /**
      * Catat Cepat: parse teks bebas ("makan coto sama ayang 39k") jadi
-     * data transaksi terstruktur. Hanya mengembalikan hasil parsing
-     * (belum disimpan) — form tetap ditampilkan agar user bisa koreksi
-     * sebelum menekan "Simpan Transaksi".
+     * data transaksi terstruktur.
      */
     public function quickParse(Request $request, TransactionTextParser $parser)
     {
