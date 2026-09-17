@@ -168,9 +168,20 @@
             opacity: 0.75;
         }
 
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 76px;
+        }
+
         * {
             -webkit-tap-highlight-color: transparent;
             box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+            .form-control, .form-select, input, select, textarea {
+                font-size: 16px !important;
+            }
         }
 
         body {
@@ -215,6 +226,8 @@
             top: 0;
             z-index: 1020;
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding-top: max(0.5rem, env(safe-area-inset-top));
             transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
@@ -669,6 +682,22 @@
                 }
             });
         }
+
+        // Smooth scroll for bottom nav anchor links
+        document.querySelectorAll('.bottom-nav a[href^="#"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const targetId = this.getAttribute('href');
+                if (targetId && targetId.length > 1) {
+                    const targetEl = document.querySelector(targetId);
+                    if (targetEl) {
+                        e.preventDefault();
+                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                }
+            });
+        });
     </script>
     @yield('scripts')
 </body>

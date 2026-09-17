@@ -175,6 +175,29 @@
             background: var(--bg-surface-hover);
             color: var(--text-primary);
         }
+
+        @media (max-width: 576px) {
+            body {
+                padding: 20px 14px;
+            }
+            .auth-card {
+                padding: 24px 18px;
+                border-radius: 18px;
+            }
+            .btn-theme-toggle {
+                top: 14px;
+                right: 14px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-control, input {
+                font-size: 16px !important;
+            }
+            .btn-submit {
+                min-height: 46px;
+            }
+        }
     </style>
 </head>
 <body>

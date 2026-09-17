@@ -90,7 +90,14 @@
         margin: 6px 0 16px;
     }
     @media (max-width: 576px) {
-        .hero-balance-val { font-size: 1.85rem; }
+        .hero-overview {
+            padding: 18px 16px;
+            border-radius: 16px;
+        }
+        .hero-balance-val {
+            font-size: 1.7rem;
+            margin: 4px 0 12px;
+        }
     }
 
     .stat-pill {
@@ -104,6 +111,13 @@
         flex: 1;
         min-width: 0;
     }
+    @media (max-width: 576px) {
+        .stat-pill {
+            padding: 10px 10px;
+            gap: 8px;
+            border-radius: 12px;
+        }
+    }
     .stat-icon {
         width: 36px;
         height: 36px;
@@ -114,6 +128,14 @@
         font-size: 1.1rem;
         flex-shrink: 0;
     }
+    @media (max-width: 576px) {
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 0.95rem;
+            border-radius: 8px;
+        }
+    }
     .stat-icon-income  { background: var(--income-soft); color: var(--income); }
     .stat-icon-expense { background: var(--expense-soft); color: var(--expense); }
     .stat-label {
@@ -123,6 +145,11 @@
         text-transform: uppercase;
         letter-spacing: 0.03em;
     }
+    @media (max-width: 576px) {
+        .stat-label {
+            font-size: 0.65rem;
+        }
+    }
     .stat-value {
         font-size: 1.05rem;
         font-weight: 700;
@@ -131,6 +158,11 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+    @media (max-width: 576px) {
+        .stat-value {
+            font-size: 0.92rem;
+        }
     }
 
     /* Smart Command Bar (Quick Input) */
@@ -362,6 +394,43 @@
         color: var(--text-primary);
     }
 
+    @media (max-width: 576px) {
+        .chip-scroll {
+            padding-bottom: 6px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .txn-card {
+            padding: 10px 12px;
+            gap: 10px;
+            border-radius: 12px;
+        }
+        .txn-thumb {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+        }
+        .icon-squircle {
+            width: 38px;
+            height: 38px;
+            font-size: 1rem;
+            border-radius: 10px;
+        }
+        .txn-title {
+            font-size: 0.88rem;
+        }
+        .txn-meta {
+            font-size: 0.72rem;
+            gap: 6px;
+        }
+        .txn-amount {
+            font-size: 0.88rem;
+        }
+        .btn-icon-soft {
+            width: 36px;
+            height: 36px;
+        }
+    }
+
     /* Budget Item Card */
     .budget-card {
         background: var(--bg-surface-elevated);
@@ -483,11 +552,11 @@
                     <i class="bi bi-terminal" style="color: var(--brand-primary);"></i>
                     Input Cepat
                 </span>
-                <span class="command-badge-key">Tekan Enter ↵</span>
+                <span class="command-badge-key d-none d-sm-inline-block">Tekan Enter ↵</span>
             </div>
             <div class="command-input-group">
                 <input type="text" id="quickText" class="command-input"
-                       placeholder="Contoh: Makan siang nasi padang 32k atau Gaji freelance 2.5jt...">
+                       placeholder="Cth: Makan siang 35k atau Gaji freelance 3jt...">
                 <button type="button" id="quickParseBtn" class="command-btn" title="Proses dan isi otomatis">
                     <i class="bi bi-arrow-return-left" id="quickParseIcon"></i>
                     <span class="d-none d-sm-inline">Proses</span>
@@ -558,15 +627,15 @@
                         <input type="hidden" name="{{ $key }}" value="{{ $val }}">
                     @endforeach
                     <div class="row g-2">
-                        <div class="col-7">
+                        <div class="col-12 col-sm-7">
                             <label class="form-label">Kata Kunci</label>
                             <input type="text" name="q" class="form-control form-control-sm" placeholder="Cari judul / catatan..." value="{{ request('q') }}">
                         </div>
-                        <div class="col-5">
+                        <div class="col-12 col-sm-5">
                             <label class="form-label">Bulan</label>
                             <input type="month" name="bulan" class="form-control form-control-sm" value="{{ request('bulan') }}">
                         </div>
-                        <div class="col-8">
+                        <div class="col-7 col-sm-8">
                             <label class="form-label">Urutan</label>
                             <select name="sort" class="form-select form-select-sm">
                                 <option value="date_desc" {{ request('sort', 'date_desc') == 'date_desc' ? 'selected' : '' }}>Tanggal Terbaru</option>
@@ -575,8 +644,8 @@
                                 <option value="amount_asc" {{ request('sort') == 'amount_asc' ? 'selected' : '' }}>Nominal Terkecil</option>
                             </select>
                         </div>
-                        <div class="col-4 d-grid">
-                            <label class="form-label">&nbsp;</label>
+                        <div class="col-5 col-sm-4 d-grid">
+                            <label class="form-label d-none d-sm-block">&nbsp;</label>
                             <button class="btn btn-primary-action btn-sm justify-content-center" type="submit">Terapkan</button>
                         </div>
                     </div>
@@ -697,22 +766,22 @@
                                     </div>
 
                                     <div class="row g-2 mb-3">
-                                        <div class="col-7">
+                                        <div class="col-12 col-sm-7">
                                             <label class="form-label">Jumlah (Rp)</label>
                                             <input type="number" step="0.01" name="amount" class="form-control tabular-nums" value="{{ $trx->amount }}" required>
                                         </div>
-                                        <div class="col-5">
+                                        <div class="col-12 col-sm-5">
                                             <label class="form-label">Kategori</label>
                                             <input type="text" name="category" list="category-list" class="form-control" value="{{ $trx->category }}" required>
                                         </div>
                                     </div>
 
                                     <div class="row g-2 mb-3">
-                                        <div class="col-6">
+                                        <div class="col-12 col-sm-6">
                                             <label class="form-label">Tanggal</label>
                                             <input type="date" name="date" class="form-control" value="{{ $trx->date->format('Y-m-d') }}" required>
                                         </div>
-                                        <div class="col-6">
+                                        <div class="col-12 col-sm-6">
                                             <label class="form-label">Ganti Bukti (opsional)</label>
                                             <input type="file" name="image" class="form-control" accept="image/*">
                                         </div>
@@ -754,7 +823,7 @@
     <div class="col-12 col-lg-5 col-xl-5">
 
         {{-- 1. WIDGET BUDGET BULAN INI --}}
-        <div class="card-panel p-4 mb-4" id="budget-section">
+        <div class="card-panel p-3 p-sm-4 mb-4" id="budget-section">
             <div class="section-header">
                 <h6 class="section-title">
                     <i class="bi bi-pie-chart" style="color: var(--brand-primary);"></i>
@@ -821,7 +890,7 @@
 
         {{-- 2. GRAFIK LAPORAN --}}
         <div id="laporan-section">
-            <div class="card-panel p-4 mb-4">
+            <div class="card-panel p-3 p-sm-4 mb-4">
                 <div class="section-header">
                     <h6 class="section-title">
                         <i class="bi bi-pie-chart-fill" style="color: #6366f1;"></i>
@@ -834,7 +903,7 @@
                 </div>
             </div>
 
-            <div class="card-panel p-4 mb-4">
+            <div class="card-panel p-3 p-sm-4 mb-4">
                 <div class="section-header">
                     <h6 class="section-title">
                         <i class="bi bi-graph-up" style="color: #10b981;"></i>
@@ -892,12 +961,12 @@
                     </div>
 
                     <div class="row g-2 mb-3">
-                        <div class="col-7">
+                        <div class="col-12 col-sm-7">
                             <label class="form-label">Jumlah (Rp)</label>
                             <input type="number" step="0.01" min="0" name="amount" class="form-control tabular-nums" placeholder="0" required value="{{ old('amount') }}">
                             @error('amount') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
-                        <div class="col-5">
+                        <div class="col-12 col-sm-5">
                             <label class="form-label">Kategori</label>
                             <input type="text" name="category" list="category-list" class="form-control" placeholder="Pilih kategori" required value="{{ old('category') }}">
                             @error('category') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
@@ -905,12 +974,12 @@
                     </div>
 
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
+                        <div class="col-12 col-sm-6">
                             <label class="form-label">Tanggal</label>
                             <input type="date" name="date" class="form-control" required value="{{ old('date', now()->format('Y-m-d')) }}">
                             @error('date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
-                        <div class="col-6">
+                        <div class="col-12 col-sm-6">
                             <label class="form-label">Bukti Gambar (opsional)</label>
                             <input type="file" name="image" class="form-control" accept="image/*">
                         </div>
