@@ -1,9 +1,337 @@
 @import 'tailwindcss';
 
+@source '../views/**/*.blade.php';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* ==========================================================================
+   DESIGN TOKENS & CSS VARIABLES
+   ========================================================================== */
+:root, [data-theme="dark"], .dark {
+    --bg-app: #070b12;
+    --bg-surface: #0f172a;
+    --bg-surface-elevated: #1e293b;
+    --bg-surface-hover: #27354f;
+    --bg-subtle: #090d16;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-color-subtle: rgba(255, 255, 255, 0.06);
+    --border-color-hover: rgba(255, 255, 255, 0.2);
+
+    --text-primary: #ffffff;
+    --text-secondary: #f1f5f9;
+    --text-muted: #cbd5e1;
+    --text-faint: #94a3b8;
+
+    --brand-primary: #3b82f6;
+    --brand-primary-soft: rgba(59, 130, 246, 0.2);
+    --brand-primary-hover: #60a5fa;
+    --brand-btn-text: #ffffff;
+
+    --income: #34d399;
+    --income-soft: rgba(52, 211, 153, 0.16);
+    --expense: #fb7185;
+    --expense-soft: rgba(251, 113, 133, 0.16);
+    --warning: #fbbf24;
+    --warning-soft: rgba(251, 191, 36, 0.16);
+
+    --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    --card-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"]:not(.dark) {
+    --bg-app: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-surface-elevated: #f1f5f9;
+    --bg-surface-hover: #e2e8f0;
+    --bg-subtle: #f8fafc;
+    --border-color: #e2e8f0;
+    --border-color-subtle: #edf2f7;
+    --border-color-hover: #cbd5e1;
+
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --text-faint: #94a3b8;
+
+    --brand-primary: #2563eb;
+    --brand-primary-soft: rgba(37, 99, 235, 0.1);
+    --brand-primary-hover: #1d4ed8;
+    --brand-btn-text: #ffffff;
+
+    --income: #059669;
+    --income-soft: rgba(5, 150, 105, 0.1);
+    --expense: #e11d48;
+    --expense-soft: rgba(225, 29, 72, 0.1);
+    --warning: #d97706;
+    --warning-soft: rgba(217, 119, 6, 0.1);
+
+    --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
+    --card-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+/* ==========================================================================
+   GLOBAL SMOOTH MODAL CONTROLS (TAILWIND ANIMATION)
+   ========================================================================== */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal.modal-visible {
+    display: flex !important;
+    opacity: 1 !important;
+}
+
+.modal .modal-dialog {
+    width: 100%;
+    max-width: 520px;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    transform: scale(0.95) translateY(12px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    margin: auto;
+}
+
+.modal.modal-visible .modal-dialog {
+    transform: scale(1) translateY(0);
+}
+
+/* Bottom Sheet Modal on Mobile */
+@media (max-width: 640px) {
+    .modal.sheet-modal {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+    .modal.sheet-modal .modal-dialog {
+        max-width: 100% !important;
+        border-radius: 1.75rem 1.75rem 0 0 !important;
+        border-bottom: none !important;
+        max-height: 92vh !important;
+        overflow-y: auto !important;
+        transform: translateY(100%) !important;
+        margin: 0 !important;
+    }
+    .modal.sheet-modal.modal-visible .modal-dialog {
+        transform: translateY(0) !important;
+    }
+}
+
+.sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--border-color-hover);
+    margin: 12px auto 6px;
+}
+@media (min-width: 641px) {
+    .sheet-handle {
+        display: none;
+    }
+}
+
+/* Modal Content & Header */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem 0.5rem;
+}
+.modal-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.modal-body {
+    padding: 1rem 1.5rem;
+}
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 0.5rem 1.5rem 1.25rem;
+}
+
+/* Close Button in Modal */
+.btn-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+.btn-close::before {
+    content: "✕";
+    font-size: 1rem;
+    font-weight: 600;
+}
+.btn-close:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-surface-hover);
+}
+
+/* Category Color Badges */
+.cat-amber   { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.cat-orange  { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+.cat-blue    { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.cat-indigo  { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+.cat-rose    { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+.cat-purple  { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+.cat-cyan    { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+.cat-violet  { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+.cat-emerald { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.cat-fuchsia { background: rgba(217, 70, 239, 0.2); color: #e879f9; }
+.cat-slate   { background: rgba(255, 255, 255, 0.14); color: #ffffff; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-color-hover);
+    border-radius: 9999px;
+}
+
+/* ==========================================================================
+   FORM CONTROLS & ACTION BUTTONS
+   ========================================================================== */
+.form-control, .form-select {
+    width: 100%;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    outline: none;
+}
+.form-control:focus, .form-select:focus {
+    background-color: var(--bg-surface-elevated);
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px var(--brand-primary-soft);
+}
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+.form-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+}
+
+.btn-primary-action {
+    background: linear-gradient(135deg, #2563eb, #3b82f6, #4f46e5);
+    color: #ffffff;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.625rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+.btn-primary-action:hover {
+    background: linear-gradient(135deg, #1d4ed8, #2563eb, #4338ca);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+}
+.btn-primary-action:active {
+    transform: scale(0.98);
+}
+
+.btn-ghost-action {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+.btn-ghost-action:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+    border-color: var(--border-color-hover);
+}
+
+/* Subtle Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.bg-success-subtle {
+    background-color: rgba(16, 185, 129, 0.18) !important;
+    color: #34d399 !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+.bg-danger-subtle {
+    background-color: rgba(244, 63, 94, 0.18) !important;
+    color: #fb7185 !important;
+    border: 1px solid rgba(244, 63, 94, 0.3) !important;
+}
+.bg-primary-subtle {
+    background-color: rgba(59, 130, 246, 0.18) !important;
+    color: #60a5fa !important;
+    border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+.bg-secondary-subtle {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+[data-theme="light"]:not(.dark) .bg-secondary-subtle {
+    background-color: rgba(0, 0, 0, 0.06) !important;
+    color: #475569 !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+

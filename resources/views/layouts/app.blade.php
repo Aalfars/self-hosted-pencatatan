@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="dark" data-bs-theme="dark">
+<html lang="id" data-theme="dark" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -8,613 +8,238 @@
 
     <!-- PWA Metadata & Web App Manifest -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0b0f17">
+    <meta name="theme-color" content="#070b12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Financee">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-    <!-- Bootstrap 5.3 & Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Bootstrap Icons for clean UI glyphs -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <!-- Theme Initializer (Prevent flash of unstyled theme) -->
     <script>
-        // Init theme immediately to prevent flash of wrong theme
         (function() {
             const savedTheme = localStorage.getItem('financee-theme') || 
                 (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
             document.documentElement.setAttribute('data-theme', savedTheme);
             document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         })();
     </script>
 
-    <style>
-        :root, [data-theme="dark"] {
-            --bg-app: #0b0f17;
-            --bg-surface: #111827;
-            --bg-surface-elevated: #182234;
-            --bg-surface-hover: #1f2b42;
-            --bg-subtle: #0f172a;
-            --border-color: rgba(255, 255, 255, 0.12);
-            --border-color-subtle: rgba(255, 255, 255, 0.07);
-            --border-color-hover: rgba(255, 255, 255, 0.24);
-
-            /* HIGH CONTRAST TYPOGRAPHY IN DARK MODE */
-            --text-primary: #ffffff;          /* Pure crisp white (17:1 contrast) */
-            --text-secondary: #f1f5f9;        /* Slate 100 - bright silver (15:1 contrast) */
-            --text-muted: #cbd5e1;            /* Slate 300 - clear, sharp secondary text (9.5:1 contrast) */
-            --text-faint: #94a3b8;            /* Slate 400 - clean labels (5.5:1 contrast) */
-
-            --brand-primary: #3b82f6;
-            --brand-primary-soft: rgba(59, 130, 246, 0.2);
-            --brand-primary-hover: #60a5fa;
-            --brand-btn-text: #ffffff;
-
-            --income: #34d399;
-            --income-soft: rgba(52, 211, 153, 0.16);
-            --income-border: rgba(52, 211, 153, 0.35);
-
-            --expense: #fb7185;
-            --expense-soft: rgba(251, 113, 133, 0.16);
-            --expense-border: rgba(251, 113, 133, 0.35);
-
-            --warning: #fbbf24;
-            --warning-soft: rgba(251, 191, 36, 0.16);
-
-            --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6);
-            --card-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-            --bottom-nav-bg: rgba(17, 24, 39, 0.95);
-            --chart-grid: rgba(255, 255, 255, 0.08);
-            --chart-text: #cbd5e1;
-        }
-
-        [data-theme="light"] {
-            --bg-app: #f8fafc;
-            --bg-surface: #ffffff;
-            --bg-surface-elevated: #f1f5f9;
-            --bg-surface-hover: #e2e8f0;
-            --bg-subtle: #f8fafc;
-            --border-color: #e2e8f0;
-            --border-color-subtle: #edf2f7;
-            --border-color-hover: #cbd5e1;
-
-            --text-primary: #0f172a;
-            --text-secondary: #334155;
-            --text-muted: #64748b;
-            --text-faint: #94a3b8;
-
-            --brand-primary: #0f172a;
-            --brand-primary-soft: rgba(15, 23, 42, 0.08);
-            --brand-primary-hover: #1e293b;
-            --brand-btn-text: #ffffff;
-
-            --income: #059669;
-            --income-soft: rgba(5, 150, 105, 0.1);
-            --income-border: rgba(5, 150, 105, 0.2);
-
-            --expense: #e11d48;
-            --expense-soft: rgba(225, 29, 72, 0.1);
-            --expense-border: rgba(225, 29, 72, 0.2);
-
-            --warning: #d97706;
-            --warning-soft: rgba(217, 119, 6, 0.1);
-
-            --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
-            --card-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
-            --bottom-nav-bg: rgba(255, 255, 255, 0.94);
-            --chart-grid: rgba(0, 0, 0, 0.06);
-            --chart-text: #64748b;
-        }
-
-        /* High Contrast Utility Overrides for Dark Mode */
-        [data-theme="dark"] .text-body,
-        [data-bs-theme="dark"] .text-body {
-            color: var(--text-primary) !important;
-        }
-
-        [data-theme="dark"] .text-muted,
-        [data-bs-theme="dark"] .text-muted {
-            color: var(--text-muted) !important;
-        }
-
-        [data-theme="dark"] .text-secondary,
-        [data-bs-theme="dark"] .text-secondary {
-            color: var(--text-muted) !important;
-        }
-
-        [data-theme="dark"] .bg-secondary-subtle,
-        [data-bs-theme="dark"] .bg-secondary-subtle {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        }
-
-        [data-theme="dark"] .bg-primary-subtle,
-        [data-bs-theme="dark"] .bg-primary-subtle {
-            background-color: rgba(59, 130, 246, 0.22) !important;
-            color: #bfdbfe !important;
-            border: 1px solid rgba(59, 130, 246, 0.35) !important;
-        }
-
-        [data-theme="dark"] .bg-success-subtle,
-        [data-bs-theme="dark"] .bg-success-subtle {
-            background-color: rgba(16, 185, 129, 0.22) !important;
-            color: #a7f3d0 !important;
-            border: 1px solid rgba(16, 185, 129, 0.35) !important;
-        }
-
-        [data-theme="dark"] .bg-danger-subtle,
-        [data-bs-theme="dark"] .bg-danger-subtle {
-            background-color: rgba(244, 63, 94, 0.22) !important;
-            color: #fecdd3 !important;
-            border: 1px solid rgba(244, 63, 94, 0.35) !important;
-        }
-
-        [data-theme="dark"] .bg-warning-subtle,
-        [data-bs-theme="dark"] .bg-warning-subtle {
-            background-color: rgba(245, 158, 11, 0.22) !important;
-            color: #fde68a !important;
-            border: 1px solid rgba(245, 158, 11, 0.35) !important;
-        }
-
-        [data-theme="dark"] .form-control::placeholder {
-            color: #94a3b8;
-            opacity: 0.75;
-        }
-
-        html {
-            scroll-behavior: smooth;
-            scroll-padding-top: 76px;
-        }
-
-        * {
-            -webkit-tap-highlight-color: transparent;
-            box-sizing: border-box;
-        }
-
-        @media (max-width: 768px) {
-            .form-control, .form-select, input, select, textarea {
-                font-size: 16px !important;
-            }
-        }
-
-        body {
-            background-color: var(--bg-app);
-            color: var(--text-primary);
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            padding-bottom: 96px;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        @media (min-width: 992px) {
-            body {
-                padding-bottom: 48px;
-            }
-        }
-
-        /* Typography & Numerals */
-        h1, h2, h3, h4, h5, h6 {
-            font-weight: 700;
-            letter-spacing: -0.025em;
-            color: var(--text-primary);
-        }
-
-        .tabular-nums {
-            font-variant-numeric: tabular-nums;
-            font-feature-settings: "tnum" 1;
-        }
-
-        a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        /* Top Navbar */
-        .app-navbar {
-            background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 1020;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding-top: max(0.5rem, env(safe-area-inset-top));
-            transition: background-color 0.2s ease, border-color 0.2s ease;
-        }
-
-        .brand-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, var(--brand-primary), #6366f1);
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
-        }
-
-        .brand-title {
-            font-size: 1.15rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            margin: 0;
-            color: var(--text-primary);
-            line-height: 1.2;
-        }
-
-        .brand-tag {
-            font-size: 0.68rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* Action Buttons */
-        .btn-theme-toggle {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-surface);
-            color: var(--text-secondary);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .btn-theme-toggle:hover {
-            background: var(--bg-surface-hover);
-            color: var(--text-primary);
-            border-color: var(--border-color-hover);
-        }
-
-        .btn-primary-action {
-            background: var(--brand-primary);
-            color: var(--brand-btn-text);
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.88rem;
-            padding: 8px 16px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: var(--card-shadow-sm);
-            transition: all 0.15s ease;
-        }
-        .btn-primary-action:hover {
-            background: var(--brand-primary-hover);
-            color: var(--brand-btn-text);
-            transform: translateY(-1px);
-        }
-
-        .btn-ghost-action {
-            background: transparent;
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.88rem;
-            padding: 8px 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.15s ease;
-        }
-        .btn-ghost-action:hover {
-            background: var(--bg-surface-hover);
-            color: var(--text-primary);
-            border-color: var(--border-color-hover);
-        }
-
-        /* Base Card Panel */
-        .card-panel {
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            box-shadow: var(--card-shadow-sm);
-            transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        /* Form Controls */
-        .form-control, .form-select {
-            background-color: var(--bg-surface-elevated);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            border-radius: 10px;
-            font-family: inherit;
-            font-size: 0.9rem;
-            padding: 9px 13px;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-        .form-control:focus, .form-select:focus {
-            background-color: var(--bg-surface-elevated);
-            color: var(--text-primary);
-            border-color: var(--brand-primary);
-            box-shadow: 0 0 0 3px var(--brand-primary-soft);
-        }
-        .form-control::placeholder {
-            color: var(--text-muted);
-            opacity: 0.8;
-        }
-        .form-label {
-            color: var(--text-secondary);
-            font-size: 0.82rem;
-            font-weight: 600;
-            margin-bottom: 0.4rem;
-        }
-
-        /* Alerts & Toast */
-        .custom-alert {
-            background-color: var(--income-soft);
-            border: 1px solid var(--income-border);
-            color: var(--income);
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        /* Bottom Nav for Mobile */
-        .bottom-nav {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--bottom-nav-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 8px 12px max(10px, env(safe-area-inset-bottom));
-            z-index: 1030;
-            transition: background 0.2s ease, border-color 0.2s ease;
-        }
-        .bottom-nav-item {
-            color: var(--text-muted);
-            font-size: 0.68rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 8px;
-            transition: color 0.15s ease;
-        }
-        .bottom-nav-item i {
-            font-size: 1.25rem;
-        }
-        .bottom-nav-item.active, .bottom-nav-item:hover {
-            color: var(--text-primary);
-        }
-
-        /* Floating Add Button for Mobile */
-        .fab-mobile {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: var(--brand-primary);
-            color: var(--brand-btn-text);
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.35rem;
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-            margin-top: -24px;
-            transition: transform 0.15s ease;
-        }
-        .fab-mobile:active {
-            transform: scale(0.92);
-        }
-
-        @media (min-width: 992px) {
-            .bottom-nav {
-                display: none !important;
-            }
-        }
-
-        /* Modals (Clean Desktop, Bottom-sheet on Mobile) */
-        .modal-content {
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            border-radius: 20px;
-            box-shadow: var(--card-shadow);
-        }
-        .btn-close {
-            filter: var(--bs-btn-close-filter, invert(var(--close-invert, 1)));
-            opacity: 0.6;
-        }
-        [data-theme="light"] {
-            --close-invert: 0;
-        }
-
-        @media (max-width: 991.98px) {
-            .modal.sheet-modal .modal-dialog {
-                margin: 0;
-                display: flex;
-                align-items: flex-end;
-                min-height: 100%;
-                max-width: 100%;
-            }
-            .modal.sheet-modal .modal-content {
-                width: 100%;
-                border-radius: 24px 24px 0 0;
-                border-bottom: none;
-                max-height: 90vh;
-                overflow-y: auto;
-            }
-            .modal.sheet-modal.fade .modal-dialog {
-                transform: translateY(100%);
-                transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            }
-            .modal.sheet-modal.show .modal-dialog {
-                transform: translateY(0);
-            }
-        }
-
-        .sheet-handle {
-            width: 36px;
-            height: 4px;
-            border-radius: 4px;
-            background: var(--border-color-hover);
-            margin: 10px auto 4px;
-        }
-        @media (min-width: 992px) {
-            .sheet-handle {
-                display: none;
-            }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-color-hover);
-            border-radius: 6px;
-        }
-    </style>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body>
+<body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070b12] dark:text-slate-100 font-sans selection:bg-blue-500 selection:text-white transition-colors duration-300 antialiased">
 
     <!-- Top App Navigation -->
-    <nav class="app-navbar py-3">
-        <div class="container-xl d-flex justify-content-between align-items-center">
+    <header class="sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
             <!-- Brand -->
-            <a href="{{ route('transactions.index') }}" class="d-flex align-items-center gap-3">
-                <div class="brand-icon">
+            <a href="{{ route('transactions.index') }}" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-white text-lg shadow-md shadow-blue-500/20 ring-2 ring-blue-500/10 group-hover:scale-105 transition-transform duration-200">
                     <i class="bi bi-wallet2"></i>
                 </div>
                 <div>
-                    <div class="brand-title">Financee</div>
-                    <div class="brand-tag">Pencatatan Keuangan</div>
+                    <div class="font-bold text-base tracking-tight text-slate-900 dark:text-white leading-tight">
+                        Financee
+                    </div>
+                    <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Pencatatan Keuangan
+                    </div>
                 </div>
             </a>
 
             <!-- Right Actions -->
-            <div class="d-flex align-items-center gap-2">
+            <div class="flex items-center gap-2.5">
+                
                 <!-- Date Pill (Desktop) -->
-                <div class="d-none d-md-flex align-items-center gap-2 px-3 py-1 rounded-pill"
-                     style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">
-                    <i class="bi bi-calendar3" style="color: var(--brand-primary);"></i>
+                <div class="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    <i class="bi bi-calendar3 text-blue-500"></i>
                     <span>{{ now()->translatedFormat('l, d F Y') }}</span>
                 </div>
 
                 <!-- PWA Install Button (Dynamic) -->
-                <button type="button" class="btn-ghost-action d-none" id="pwaInstallBtn" title="Install Aplikasi Financee">
-                    <i class="bi bi-download"></i>
-                    <span class="d-none d-md-inline">Install App</span>
+                <button type="button" id="pwaInstallBtn" title="Install Aplikasi Financee"
+                        class="hidden items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer">
+                    <i class="bi bi-download text-blue-500"></i>
+                    <span class="hidden sm:inline">Install App</span>
                 </button>
 
                 <!-- Export Button (Desktop) -->
-                <a href="{{ route('report.export', request()->query()) }}" class="btn-ghost-action d-none d-md-inline-flex" title="Export ke Excel">
-                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                <a href="{{ route('report.export', request()->query()) }}" 
+                   title="Export ke Excel"
+                   class="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer">
+                    <i class="bi bi-file-earmark-spreadsheet text-emerald-500 text-sm"></i>
                     <span>Export</span>
                 </a>
 
                 <!-- Theme Switcher -->
-                <button type="button" class="btn-theme-toggle" id="themeToggleBtn" title="Ganti Mode Gelap / Terang">
-                    <i class="bi bi-moon-stars" id="themeIcon"></i>
+                <button type="button" id="themeToggleBtn" aria-label="Ganti Tema"
+                        class="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-blue-500 transition-all active:scale-95 cursor-pointer">
+                    <i class="bi bi-sun text-base transition-transform duration-200 hover:rotate-45" id="themeIcon"></i>
                 </button>
 
-                <!-- User Profile Dropdown -->
+                <!-- User Profile Dropdown (Alpine.js) -->
                 @auth
-                <div class="dropdown">
-                    <button type="button" class="btn-ghost-action" data-bs-toggle="dropdown" aria-expanded="false" style="padding: 6px 12px;">
-                        <i class="bi bi-person-circle" style="color: var(--brand-primary); font-size: 1.1rem;"></i>
-                        <span class="d-none d-sm-inline fw-semibold">{{ Auth::user()->name }}</span>
-                        <i class="bi bi-chevron-down ms-1" style="font-size: 0.7rem; color: var(--text-muted);"></i>
+                <div class="relative" x-data="{ open: false }">
+                    <button type="button" @click="open = !open" 
+                            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer">
+                        <i class="bi bi-person-circle text-blue-500 text-base"></i>
+                        <span class="hidden sm:inline font-semibold">{{ Auth::user()->name }}</span>
+                        <i class="bi bi-chevron-down text-[10px] text-slate-400 transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="border: 1px solid var(--border-color); background: var(--bg-surface); border-radius: 14px; min-width: 210px; padding: 8px;">
-                        <li class="px-3 py-2 border-bottom" style="border-color: var(--border-color) !important;">
-                            <div class="fw-bold small text-body">{{ Auth::user()->name }}</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">{{ Auth::user()->email }}</div>
-                        </li>
-                        <li class="pt-1">
-                            <form action="{{ route('logout') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="dropdown-item py-2 text-danger d-flex align-items-center gap-2 rounded-2" style="font-size: 0.85rem;">
-                                    <i class="bi bi-box-arrow-right"></i> Keluar
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
+
+                    <div x-show="open" 
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                         class="absolute right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-900/10 dark:shadow-black/50 p-1.5 z-50 focus:outline-none"
+                         style="display: none;">
+                        <div class="px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                            <div class="font-bold text-xs text-slate-900 dark:text-white truncate">{{ Auth::user()->name }}</div>
+                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate">{{ Auth::user()->email }}</div>
+                        </div>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" 
+                                    class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer">
+                                <i class="bi bi-box-arrow-right text-sm"></i>
+                                <span>Keluar dari Akun</span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
                 @endauth
 
                 <!-- Tambah Transaksi Button (Desktop) -->
-                <button type="button" class="btn-primary-action d-none d-lg-inline-flex" data-bs-toggle="modal" data-bs-target="#addModal">
-                    <i class="bi bi-plus-lg"></i>
+                <button type="button" 
+                        data-bs-toggle="modal" data-bs-target="#addModal"
+                        class="hidden lg:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer">
+                    <i class="bi bi-plus-lg text-sm"></i>
                     <span>Catat Transaksi</span>
                 </button>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Main Container -->
-    <main class="container-xl pt-4">
-        @if (session('success'))
-            <div class="alert custom-alert d-flex align-items-center justify-content-between mb-4" role="alert">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span>{{ session('success') }}</span>
+    <!-- Floating Toast Notification System (Fintech Polish) -->
+    <div x-data="{
+            toasts: [],
+            add(message, type = 'success', duration = 3500) {
+                const id = Date.now();
+                this.toasts.push({ id, message, type });
+                setTimeout(() => this.remove(id), duration);
+            },
+            remove(id) {
+                this.toasts = this.toasts.filter(t => t.id !== id);
+            }
+        }"
+        x-init="
+            @if (session('success'))
+                add('{{ session('success') }}', 'success');
+            @endif
+            @if (session('error'))
+                add('{{ session('error') }}', 'error');
+            @endif
+            window.addEventListener('financee:toast', (e) => {
+                add(e.detail.message, e.detail.type || 'success', e.detail.duration || 3500);
+            });
+        "
+        class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div x-transition:enter="transition ease-out duration-250"
+                 x-transition:enter-start="opacity-0 translate-y-3 scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
+                 class="pointer-events-auto p-4 rounded-2xl backdrop-blur-xl border shadow-2xl flex items-center justify-between gap-3 text-xs font-semibold"
+                 :class="{
+                     'bg-slate-900/95 dark:bg-slate-900/95 border-emerald-500/30 text-emerald-300 shadow-emerald-950/20': toast.type === 'success',
+                     'bg-slate-900/95 dark:bg-slate-900/95 border-rose-500/30 text-rose-300 shadow-rose-950/20': toast.type === 'error',
+                     'bg-slate-900/95 border-slate-700 text-slate-100': toast.type === 'info'
+                 }">
+                <div class="flex items-center gap-2.5">
+                    <i class="text-base" :class="{
+                        'bi bi-check-circle-fill text-emerald-400': toast.type === 'success',
+                        'bi bi-exclamation-circle-fill text-rose-400': toast.type === 'error',
+                        'bi bi-info-circle-fill text-blue-400': toast.type === 'info'
+                    }"></i>
+                    <span x-text="toast.message"></span>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <button type="button" @click="remove(toast.id)" class="text-white/60 hover:text-white p-1 cursor-pointer">
+                    ✕
+                </button>
             </div>
-        @endif
+        </template>
+    </div>
 
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 lg:pb-12">
         @yield('content')
     </main>
 
-    <!-- Bottom Navigation for Mobile Devices -->
-    <nav class="bottom-nav">
-        <a href="{{ route('transactions.index') }}" class="bottom-nav-item active">
-            <i class="bi bi-grid-1x2-fill"></i>
-            <span>Beranda</span>
-        </a>
-        <a href="#budget-section" class="bottom-nav-item">
-            <i class="bi bi-pie-chart-fill"></i>
-            <span>Budget</span>
-        </a>
+    <!-- Floating Bottom Navigation for Mobile Devices -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 px-4 py-2 transition-colors duration-300">
+        <div class="max-w-md mx-auto flex items-center justify-between relative">
+            
+            <!-- Beranda -->
+            <a href="{{ route('transactions.index') }}" 
+               class="bottom-nav-item flex flex-col items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 transition-colors">
+                <i class="bi bi-grid-1x2-fill text-lg"></i>
+                <span>Beranda</span>
+            </a>
 
-        <!-- Mobile Center Add Button -->
-        <button type="button" class="fab-mobile" data-bs-toggle="modal" data-bs-target="#addModal" aria-label="Tambah Transaksi">
-            <i class="bi bi-plus-lg"></i>
-        </button>
+            <!-- Budget -->
+            <a href="#budget-section" 
+               class="bottom-nav-item flex flex-col items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                <i class="bi bi-pie-chart-fill text-lg"></i>
+                <span>Budget</span>
+            </a>
 
-        <a href="#laporan-section" class="bottom-nav-item">
-            <i class="bi bi-graph-up"></i>
-            <span>Laporan</span>
-        </a>
-        <a href="{{ route('report.export', request()->query()) }}" class="bottom-nav-item">
-            <i class="bi bi-download"></i>
-            <span>Export</span>
-        </a>
+            <!-- Center Add FAB Button -->
+            <div class="relative -top-5">
+                <button type="button" 
+                        data-bs-toggle="modal" data-bs-target="#addModal" 
+                        aria-label="Catat Transaksi"
+                        class="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-600 text-white flex items-center justify-center text-xl shadow-xl shadow-blue-500/35 ring-4 ring-white dark:ring-[#070b12] active:scale-90 hover:scale-105 transition-all duration-200 cursor-pointer">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+
+            <!-- Laporan -->
+            <a href="#laporan-section" 
+               class="bottom-nav-item flex flex-col items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                <i class="bi bi-graph-up text-lg"></i>
+                <span>Laporan</span>
+            </a>
+
+            <!-- Export -->
+            <a href="{{ route('report.export', request()->query()) }}" 
+               class="bottom-nav-item flex flex-col items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                <i class="bi bi-download text-lg"></i>
+                <span>Export</span>
+            </a>
+        </div>
     </nav>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Global Client Scripts -->
     <script>
         // Theme switcher logic
         (function() {
@@ -636,10 +261,18 @@
             updateIcon(currentTheme);
 
             themeToggleBtn.addEventListener('click', function() {
-                const current = html.getAttribute('data-theme');
+                const current = html.getAttribute('data-theme') || 'dark';
                 const next = current === 'dark' ? 'light' : 'dark';
+                
                 html.setAttribute('data-theme', next);
                 html.setAttribute('data-bs-theme', next);
+                
+                if (next === 'dark') {
+                    html.classList.add('dark');
+                } else {
+                    html.classList.remove('dark');
+                }
+
                 localStorage.setItem('financee-theme', next);
                 updateIcon(next);
 
@@ -664,8 +297,8 @@
             e.preventDefault();
             deferredPrompt = e;
             if (pwaInstallBtn) {
-                pwaInstallBtn.classList.remove('d-none');
-                pwaInstallBtn.classList.add('d-inline-flex');
+                pwaInstallBtn.classList.remove('hidden');
+                pwaInstallBtn.classList.add('inline-flex');
             }
         });
 
@@ -675,8 +308,8 @@
                     deferredPrompt.prompt();
                     const { outcome } = await deferredPrompt.userChoice;
                     if (outcome === 'accepted') {
-                        pwaInstallBtn.classList.add('d-none');
-                        pwaInstallBtn.classList.remove('d-inline-flex');
+                        pwaInstallBtn.classList.add('hidden');
+                        pwaInstallBtn.classList.remove('inline-flex');
                     }
                     deferredPrompt = null;
                 }
@@ -684,7 +317,7 @@
         }
 
         // Smooth scroll for bottom nav anchor links
-        document.querySelectorAll('.bottom-nav a[href^="#"]').forEach(link => {
+        document.querySelectorAll('nav a[href^="#"]').forEach(link => {
             link.addEventListener('click', function(e) {
                 const targetId = this.getAttribute('href');
                 if (targetId && targetId.length > 1) {
@@ -692,8 +325,6 @@
                     if (targetEl) {
                         e.preventDefault();
                         targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
-                        this.classList.add('active');
                     }
                 }
             });

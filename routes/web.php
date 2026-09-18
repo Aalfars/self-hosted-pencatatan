@@ -14,10 +14,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 });
 
+// Logout dapat diakses via POST maupun GET (mencegah error 405 jika diakses langsung lewat URL)
+Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
+
 // Rute Terproteksi (Hanya Pengguna yang Login)
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
     Route::get('/', [TransactionController::class, 'index'])->name('transactions.index');
     Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
     Route::post('/transactions/quick-parse', [TransactionController::class, 'quickParse'])->name('transactions.quick-parse');
