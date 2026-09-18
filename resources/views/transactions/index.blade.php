@@ -5,19 +5,22 @@
 @php
     if (!function_exists('categoryMeta')) {
         function categoryMeta($cat) {
+            $catClean = ucfirst(strtolower(trim($cat ?? '')));
             $map = [
                 'Makan'        => ['icon' => 'bi-cup-hot-fill',     'color' => 'amber'],
                 'Jajan'        => ['icon' => 'bi-cup-straw',        'color' => 'orange'],
                 'Bensin'       => ['icon' => 'bi-fuel-pump-fill',   'color' => 'blue'],
                 'Kewajiban'    => ['icon' => 'bi-shield-check',     'color' => 'indigo'],
-                'Donasi/Amal'  => ['icon' => 'bi-heart-fill',       'color' => 'rose'],
-                'Beli Barang'  => ['icon' => 'bi-bag-fill',         'color' => 'purple'],
+                'Donasi/amal'  => ['icon' => 'bi-heart-fill',       'color' => 'rose'],
+                'Beli barang'  => ['icon' => 'bi-bag-fill',         'color' => 'purple'],
                 'Transportasi' => ['icon' => 'bi-car-front-fill',   'color' => 'cyan'],
                 'Tagihan'      => ['icon' => 'bi-receipt-cutoff',   'color' => 'violet'],
                 'Kesehatan'    => ['icon' => 'bi-heart-pulse-fill', 'color' => 'emerald'],
                 'Hiburan'      => ['icon' => 'bi-controller',       'color' => 'fuchsia'],
+                'Gaji'         => ['icon' => 'bi-cash-coin',        'color' => 'emerald'],
+                'Pemasukan'    => ['icon' => 'bi-wallet2',          'color' => 'emerald'],
             ];
-            return $map[$cat] ?? ['icon' => 'bi-tag-fill', 'color' => 'slate'];
+            return $map[$catClean] ?? ['icon' => 'bi-tag-fill', 'color' => 'slate'];
         }
     }
     $saldo = $totalPemasukan - $totalPengeluaran;
@@ -34,18 +37,18 @@
     <div class="lg:col-span-7 space-y-6">
         
         {{-- 1. HERO BALANCE CARD --}}
-        <div class="p-6 sm:p-7 rounded-3xl bg-white/85 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl shadow-slate-900/5 dark:shadow-black/40 relative overflow-hidden transition-all duration-300">
-            <div class="flex items-center justify-between">
+        <div class="p-5 sm:p-7 rounded-3xl bg-white/85 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 shadow-xl shadow-slate-900/5 dark:shadow-black/40 relative overflow-hidden transition-all duration-300">
+            <div class="flex flex-wrap items-center justify-between gap-2.5">
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     Saldo Bersih Periode Ini
                 </span>
-                <span class="badge {{ $saldo >= 0 ? 'bg-success-subtle text-emerald-600 dark:text-emerald-400' : 'bg-danger-subtle text-rose-600 dark:text-rose-400' }} font-mono text-[11px] px-2.5 py-1">
-                    <i class="bi {{ $saldo >= 0 ? 'bi-shield-check' : 'bi-exclamation-triangle' }} mr-1"></i>
-                    {{ $saldo >= 0 ? 'Arus Kas Sehat' : 'Defisit Pengeluaran' }}
+                <span class="badge {{ $saldo >= 0 ? 'bg-success-subtle' : 'bg-danger-subtle' }} text-xs font-semibold px-3 py-1 rounded-full shadow-xs flex items-center gap-1.5">
+                    <i class="bi {{ $saldo >= 0 ? 'bi-shield-check' : 'bi-exclamation-triangle' }} text-xs"></i>
+                    <span>{{ $saldo >= 0 ? 'Arus Kas Sehat' : 'Defisit Pengeluaran' }}</span>
                 </span>
             </div>
 
-            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white my-3">
+            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white my-3 break-words">
                 Rp {{ number_format($saldo, 0, ',', '.') }}
             </div>
 
@@ -239,7 +242,7 @@
                             {{ $trx->title }}
                         </div>
                         <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            <span class="badge bg-secondary-subtle text-[10px] font-semibold">{{ $trx->category }}</span>
+                            <span class="badge bg-secondary-subtle text-[10px] font-semibold">{{ ucfirst($trx->category) }}</span>
                             <span>&bull;</span>
                             <span>{{ $trx->date->translatedFormat('d M Y') }}</span>
                             @if ($trx->description)
